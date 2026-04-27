@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and balance",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "balance": { "type": "number", "description": "Balance in cents" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["uid", "email", "balance", "role", "createdAt", "updatedAt"]
+    },
+    "NumberSession": {
+      "title": "NumberSession",
+      "description": "A rented number session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "number": { "type": "string" },
+        "country": { "type": "string" },
+        "service": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"] },
+        "cost": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "number", "country", "service", "status", "cost", "expiresAt", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Received SMS message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "text": { "type": "string" },
+        "sender": { "type": "string" },
+        "receivedAt": { "type": "number" }
+      },
+      "required": ["id", "sessionId", "userId", "text", "sender", "receivedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Balance transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number", "description": "Amount in cents" },
+        "type": { "type": "string", "enum": ["deposit", "purchase", "refund"] },
+        "description": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "amount", "type", "description", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User profiles and balances"
+    },
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "NumberSession" },
+      "description": "Number rental sessions"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "Message" },
+      "description": "Received SMS messages"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "Transaction" },
+      "description": "Ledger of transactions"
+    }
+  }
+}

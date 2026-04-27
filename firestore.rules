@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && incoming().uid == userId && incoming().balance == 0 && incoming().role == "user";
+      // Allow balance changes for testing / buying. In production, wrap topups in backend validation.
+      allow update: if isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt'])
+      ) || isAdmin();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid || isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid || isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid || isAdmin();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+  }
+}
