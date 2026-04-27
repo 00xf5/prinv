@@ -87,8 +87,8 @@ export function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-900">Active Numbers</h2>
-          <Button variant="ghost" className="text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" asChild>
-            <Link to="/inbox">View All <ArrowUpRight className="ml-1 h-4 w-4" /></Link>
+          <Button variant="ghost" className="text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" render={<Link to="/inbox" />}>
+            View All <ArrowUpRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
         
