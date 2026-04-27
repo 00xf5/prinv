@@ -153,8 +153,10 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2 md:gap-4">
             <Sheet>
-              <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden -ml-2" />}>
-                <Menu className="h-5 w-5 text-slate-600" />
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden -ml-2">
+                  <Menu className="h-5 w-5 text-slate-600" />
+                </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
                 <div className="p-6 border-b border-slate-100 flex items-center gap-3">

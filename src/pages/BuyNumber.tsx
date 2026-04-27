@@ -51,7 +51,18 @@ export function BuyNumber() {
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
   
+  const [visibleCountryCount, setVisibleCountryCount] = useState(30);
+  const [visibleServiceCount, setVisibleServiceCount] = useState(30);
+  
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setVisibleCountryCount(30);
+  }, [searchCountry]);
+
+  useEffect(() => {
+    setVisibleServiceCount(30);
+  }, [searchService]);
 
   useEffect(() => {
     async function loadCountries() {
@@ -223,19 +234,34 @@ export function BuyNumber() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {isLoadingCountries ? (
                   <div className="col-span-full flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-indigo-600" /></div>
-                ) : filteredCountries.map(country => (
-                  <button
-                    key={country.grizzlyId}
-                    onClick={() => setSelectedCountry(country)}
-                    className={`flex items-center gap-2 p-3 rounded-md border text-left transition-colors ${
-                      selectedCountry?.grizzlyId === country.grizzlyId
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm"
-                        : "border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                    }`}
-                  >
-                    <span className="text-sm font-bold truncate text-slate-800">{country.name}</span>
-                  </button>
-                ))}
+                ) : (
+                  <>
+                    {filteredCountries.slice(0, visibleCountryCount).map(country => (
+                      <button
+                        key={country.grizzlyId}
+                        onClick={() => setSelectedCountry(country)}
+                        className={`flex items-center gap-2 p-3 rounded-md border text-left transition-colors ${
+                          selectedCountry?.grizzlyId === country.grizzlyId
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm"
+                            : "border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                        }`}
+                      >
+                        <span className="text-sm font-bold truncate text-slate-800">{country.name}</span>
+                      </button>
+                    ))}
+                    {filteredCountries.length > visibleCountryCount && (
+                      <div className="col-span-full pt-2">
+                        <Button
+                          variant="outline"
+                          className="w-full border-dashed text-slate-500 hover:text-slate-700"
+                          onClick={() => setVisibleCountryCount(prev => prev + 30)}
+                        >
+                          Load more countries
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -260,28 +286,43 @@ export function BuyNumber() {
                      <Loader2 className="animate-spin h-6 w-6 text-indigo-600 mb-2" />
                      <span className="text-xs text-slate-500">Fetching prices...</span>
                   </div>
-                ) : filteredServices.map(service => (
-                  <button
-                    key={service.id}
-                    onClick={() => setSelectedService(service)}
-                    className={`flex flex-col gap-2 p-3 rounded-md border text-left transition-colors ${
-                      selectedService?.id === service.id
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm"
-                        : "border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{service.icon}</span>
-                      <span className="text-sm font-bold text-slate-800 truncate">{service.name}</span>
-                    </div>
-                    <div className="flex items-center justify-between w-full">
-                      <span className={`text-xs font-semibold ${selectedService?.id === service.id ? "text-indigo-600" : "text-slate-500"}`}>
-                        {(calculatePrice(service.grizzlyCost) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                      </span>
-                      <span className="text-[10px] text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{service.count}</span>
-                    </div>
-                  </button>
-                ))}
+                ) : (
+                  <>
+                    {filteredServices.slice(0, visibleServiceCount).map(service => (
+                      <button
+                        key={service.id}
+                        onClick={() => setSelectedService(service)}
+                        className={`flex flex-col gap-2 p-3 rounded-md border text-left transition-colors ${
+                          selectedService?.id === service.id
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm"
+                            : "border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{service.icon}</span>
+                          <span className="text-sm font-bold text-slate-800 truncate">{service.name}</span>
+                        </div>
+                        <div className="flex items-center justify-between w-full">
+                          <span className={`text-xs font-semibold ${selectedService?.id === service.id ? "text-indigo-600" : "text-slate-500"}`}>
+                            {(calculatePrice(service.grizzlyCost) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                          </span>
+                          <span className="text-[10px] text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{service.count}</span>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredServices.length > visibleServiceCount && (
+                      <div className="col-span-full pt-2">
+                        <Button
+                          variant="outline"
+                          className="w-full border-dashed text-slate-500 hover:text-slate-700"
+                          onClick={() => setVisibleServiceCount(prev => prev + 30)}
+                        >
+                          Load more services
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </ScrollArea>
           </div>
