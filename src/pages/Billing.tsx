@@ -33,24 +33,25 @@ export function Billing() {
     setIsProcessing(true);
     try {
       const topupCents = parseFloat(amount) * 100;
-      await runTransaction(db, async (transaction) => {
-        const userRef = doc(db, "users", auth.currentUser!.uid);
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists()) throw new Error("User not found!");
-        
-        const newBalance = (userDoc.data().balance || 0) + topupCents;
-        transaction.update(userRef, { balance: newBalance, updatedAt: Date.now() });
-
-        const txRef = doc(collection(db, "transactions"));
-        transaction.set(txRef, {
-          userId: auth.currentUser!.uid,
-          amount: topupCents,
-          type: "topup",
-          status: "completed",
-          createdAt: Date.now()
-        });
+      
+      // Request payment creation from our backend
+      const res = await fetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: auth.currentUser?.uid,
+          amountInCents: topupCents
+        })
       });
-      toast.success(`Successfully added $${amount} to your balance`);
+
+      if (!res.ok) throw new Error("Failed to initialize payment");
+
+      const data = await res.json();
+      
+      // Open the mock Pagsmile checkout URL
+      window.open(data.checkoutUrl, "_blank", "width=500,height=600");
+      
+      toast.info("Payment window opened. Awaiting completion...");
       setAmount("");
     } catch (err: any) {
       console.error(err);

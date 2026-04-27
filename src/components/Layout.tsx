@@ -140,6 +140,10 @@ export function Layout({ children }: { children: ReactNode }) {
               Add Funds
             </Button>
           </Link>
+          <Button variant="ghost" className="mt-4 w-full flex items-center justify-start text-slate-500 hover:text-slate-900 border border-slate-200" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
         </div>
       </aside>
 
@@ -181,13 +185,17 @@ export function Layout({ children }: { children: ReactNode }) {
                       Add Funds
                     </Button>
                   </Link>
+                  <Button variant="ghost" className="mt-4 w-full flex items-center justify-start text-slate-500 hover:text-slate-900 border border-slate-200" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
 
             <div className="flex items-center gap-2">
               <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="text-sm font-medium text-slate-500 hidden sm:inline">Grizzly Node: Active</span>
+              <span className="text-sm font-medium text-slate-500 hidden sm:inline"></span>
             </div>
             <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
             <div className="text-sm text-slate-500 font-mono hidden sm:block">API Latency: 142ms</div>
