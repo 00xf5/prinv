@@ -5,8 +5,10 @@ import { Wallet, CreditCard, ArrowRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { db, auth } from "../lib/firebase";
 import { doc, onSnapshot, runTransaction, collection } from "firebase/firestore";
+import { useExchangeRate } from "../lib/useExchangeRate";
 
 export function Billing() {
+  const { formatCentsToNGN, formatDollarsToNGN } = useExchangeRate();
   const [amount, setAmount] = useState("10");
   const [isProcessing, setIsProcessing] = useState(false);
   const [balance, setBalance] = useState<number>(0);
@@ -73,8 +75,7 @@ export function Billing() {
           <div className="p-6">
             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Current Balance</h2>
             <div className="text-5xl font-bold tracking-tight flex items-center">
-              <span className="text-slate-500 mr-2">$</span>
-              {(balance / 100).toFixed(2)}
+              {formatCentsToNGN(balance)}
             </div>
           </div>
           <div className="bg-slate-800 border-t border-slate-700 p-4">
@@ -99,21 +100,18 @@ export function Billing() {
                   className={`w-full font-bold shadow-sm ${amount === preset ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
                   onClick={() => setAmount(preset)}
                 >
-                  ${preset}
+                  {formatDollarsToNGN(Number(preset))}
                 </Button>
               ))}
             </div>
             
             <div className="relative pt-2">
-              <div className="absolute inset-y-0 pt-2 left-3 flex items-center pointer-events-none">
-                <span className="text-slate-400 font-medium">$</span>
-              </div>
               <Input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="pl-7 h-12 text-lg font-bold text-slate-900 border-slate-200 bg-slate-50 focus-visible:ring-indigo-500"
-                placeholder="Custom Amount"
+                className="h-12 text-lg font-bold text-slate-900 border-slate-200 bg-slate-50 focus-visible:ring-indigo-500"
+                placeholder={`Custom Amount (e.g. ${formatDollarsToNGN(10)})`}
               />
             </div>
           </div>
@@ -121,7 +119,7 @@ export function Billing() {
             <Button className="w-full h-12 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" onClick={handleTopUp} disabled={isProcessing || !amount}>
               {isProcessing ? "Redirecting to Checkout..." : (
                 <>
-                  Pay ${(parseFloat(amount) || 0).toFixed(2)}
+                  Pay {formatDollarsToNGN(parseFloat(amount) || 0)}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

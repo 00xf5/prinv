@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Globe, Shield, Zap, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -23,16 +23,12 @@ export function Home() {
             Real numbers, real fast.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/auth">
-              <Button size="lg" className="h-12 px-8 text-base shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto">
-                Get Started
-                <CheckCircle2 className="ml-2 h-4 w-4" />
-              </Button>
+            <Link to="/auth" className={buttonVariants({ size: "lg", className: "h-12 px-8 text-base shadow-lg hover:shadow-xl transition-shadow w-full sm:w-auto" })}>
+              Get Started
+              <CheckCircle2 className="ml-2 h-4 w-4" />
             </Link>
-            <Link to="/auth">
-              <Button size="lg" variant="outline" className="h-12 px-8 text-base bg-white w-full sm:w-auto">
-                View Pricing
-              </Button>
+            <Link to="/auth" className={buttonVariants({ size: "lg", variant: "outline", className: "h-12 px-8 text-base bg-white w-full sm:w-auto" })}>
+              View Pricing
             </Link>
           </div>
         </motion.div>

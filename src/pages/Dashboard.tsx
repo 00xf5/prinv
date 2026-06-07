@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { auth, db } from "../lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Wallet, Phone, ArrowUpRight, Activity } from "lucide-react";
 import { format } from "date-fns";
+import { useExchangeRate } from "../lib/useExchangeRate";
 
 export function Dashboard() {
+  const { formatCentsToNGN } = useExchangeRate();
   const [balance, setBalance] = useState<number>(0);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
@@ -41,45 +43,40 @@ export function Dashboard() {
         <p className="text-slate-500 mt-1 text-sm">Welcome back. Here's an overview of your account.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-start justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-400 uppercase mb-2">Current Balance</div>
-            <div className="text-3xl font-bold text-slate-900">${(balance / 100).toFixed(2)}</div>
-            <Link to="/billing">
-              <Button size="sm" variant="outline" className="mt-4 border-slate-200 text-slate-700 w-full font-semibold">
-                Add Funds
-              </Button>
+      <div className="grid grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
+          <div className="w-full">
+            <div className="flex justify-between items-start mb-2">
+              <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Current Balance</div>
+              <div className="p-1.5 md:p-3 bg-indigo-50 rounded-lg text-indigo-600 md:hidden">
+                <Wallet className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-0">{formatCentsToNGN(balance)}</div>
+            <Link to="/billing" className={buttonVariants({ size: "sm", variant: "outline", className: "mt-0 md:mt-4 border-slate-200 text-slate-700 w-full font-semibold text-xs py-1 h-8 md:h-9" })}>
+              Add Funds
             </Link>
           </div>
-          <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+          <div className="hidden md:block p-3 bg-indigo-50 rounded-lg text-indigo-600 ml-4">
             <Wallet className="h-6 w-6" />
           </div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-start justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-400 uppercase mb-2">Active Numbers</div>
-            <div className="text-3xl font-bold text-emerald-600">{activeSessions.length}</div>
-            <Link to="/buy">
-              <Button size="sm" className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full font-bold">
-                Rent Number
-              </Button>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
+          <div className="w-full">
+            <div className="flex justify-between items-start mb-2">
+              <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Active Numbers</div>
+              <div className="p-1.5 md:p-3 bg-emerald-50 rounded-lg text-emerald-600 md:hidden">
+                <Phone className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-4 md:mb-0">{activeSessions.length}</div>
+            <Link to="/buy" className={buttonVariants({ size: "sm", className: "mt-0 md:mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full font-bold text-xs py-1 h-8 md:h-9" })}>
+              Rent Number
             </Link>
           </div>
-          <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+          <div className="hidden md:block p-3 bg-emerald-50 rounded-lg text-emerald-600 ml-4">
             <Phone className="h-6 w-6" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-start justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-400 uppercase mb-2">Success Rate</div>
-            <div className="text-3xl font-bold text-slate-900">98.5%</div>
-            <p className="text-xs text-slate-500 mt-2 font-medium">Global delivery success rate</p>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-lg text-slate-500">
-            <Activity className="h-6 w-6" />
           </div>
         </div>
       </div>
@@ -87,9 +84,9 @@ export function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-900">Active Numbers</h2>
-          <Button variant="ghost" className="text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" render={<Link to="/inbox" />}>
+          <Link to="/inbox" className={buttonVariants({ variant: "ghost", className: "text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" })}>
             View All <ArrowUpRight className="ml-1 h-4 w-4" />
-          </Button>
+          </Link>
         </div>
         
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -127,7 +124,23 @@ export function Dashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-slate-500 font-mono">
-                      {format(new Date(session.expiresAt), "HH:mm:ss")}
+                      <div className="flex items-center justify-end gap-3">
+                        {format(new Date(session.expiresAt), "HH:mm:ss")}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          onClick={() => {
+                            fetch("/api/sessions/refund", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

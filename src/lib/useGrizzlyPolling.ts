@@ -59,10 +59,15 @@ export function useGrizzlyPolling() {
           }
 
           if (data === "STATUS_CANCEL") {
-            await updateDoc(doc(db, "sessions", session.id), {
-              status: "cancelled",
-              updatedAt: Date.now()
-            });
+            try {
+              await fetch("/api/sessions/refund", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+              });
+            } catch (e) {
+              console.error("Failed to call refund api", e);
+            }
           }
         } catch (err) {
           console.error("Failed to poll Grizzly for session", session.id, err);

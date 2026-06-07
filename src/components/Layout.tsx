@@ -3,38 +3,32 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
-import { Button } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
 import { Phone, LayoutDashboard, Inbox, LogOut, Wallet, Menu, Search, User, Hexagon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../../components/ui/sheet";
 import { useGrizzlyPolling } from "../lib/useGrizzlyPolling";
+import { useExchangeRate } from "../lib/useExchangeRate";
 
-function PrinevestLogo() {
+function VverifyLogo({ className = "w-8 h-8" }: { className?: string }) {
   return (
-    <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="pv-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#4F46E5" />
-          <stop offset="100%" stopColor="#9333EA" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      <rect width="100" height="100" rx="24" fill="url(#pv-grad)" />
-      
-      {/* Abstract 'P' & 'V' interacting */}
-      <path d="M30 70 L30 30 C30 30 50 20 65 30 C75 36 75 50 65 56 C50 64 45 60 45 60 L60 80" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)"/>
-      <path d="M45 50 L30 50" stroke="white" strokeWidth="8" strokeLinecap="round" />
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={`select-none ${className}`}>
+      {/* Dark Hexagon Base for high contrast */}
+      <path d="M50 4 L88 24 L88 66 C88 84 50 96 50 96 C50 96 12 84 12 66 L12 24 L50 4 Z" fill="#0F172A" />
+      {/* Inner Accent layer (Indigo) */}
+      <path d="M50 14 L80 30 L80 63 C80 77 50 86 50 86 C50 86 20 77 20 63 L20 30 L50 14 Z" fill="#4F46E5" />
+      {/* Big bold distinct V's */}
+      {/* Back check/slash */}
+      <path d="M30 45 L45 60 L78 28" stroke="#A5B4FC" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Main overlapping V */}
+      <path d="M40 68 L50 78 L80 48" stroke="white" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M35 52 L50 67 L65 42" stroke="white" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function Layout({ children }: { children: ReactNode }) {
   useGrizzlyPolling();
+  const { formatCentsToNGN } = useExchangeRate();
   const [user, setUser] = useState(auth.currentUser);
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState<number>(0);
@@ -82,17 +76,12 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         <header className="border-b bg-white border-slate-200">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3 text-xl font-bold tracking-tight text-slate-900">
-              <PrinevestLogo />
-              Prinevest
+            <Link to="/" className="flex items-center gap-3">
+              <VverifyLogo className="w-10 h-10" />
             </Link>
             <nav className="flex items-center gap-4">
-              <Link to="/auth">
-                <Button variant="ghost" className="text-slate-600 hover:bg-slate-50">Log in</Button>
-              </Link>
-              <Link to="/auth">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">Get Started</Button>
-              </Link>
+              <Link to="/auth" className={buttonVariants({ variant: "ghost", className: "text-slate-600 hover:bg-slate-50" })}>Log in</Link>
+              <Link to="/auth" className={buttonVariants({ className: "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold" })}>Get Started</Link>
             </nav>
           </div>
         </header>
@@ -112,9 +101,10 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="h-screen w-full bg-slate-50 text-slate-900 flex font-sans overflow-hidden">
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col">
-        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-          <PrinevestLogo />
-          <h1 className="text-xl font-bold tracking-tight">Prinevest</h1>
+        <div className="p-6 border-b border-slate-100 flex items-center justify-center">
+          <Link to="/">
+            <VverifyLogo className="w-12 h-12" />
+          </Link>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navLinks.map((link) => (
@@ -134,11 +124,9 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
         <div className="p-4 border-t border-slate-100 bg-slate-50">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Wallet Balance</div>
-          <div className="text-2xl font-bold text-slate-800">${(balance / 100).toFixed(2)}</div>
-          <Link to="/billing">
-            <Button className="mt-3 w-full bg-white border border-slate-200 py-1.5 rounded-md text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50">
-              Add Funds
-            </Button>
+          <div className="text-2xl font-bold text-slate-800">{formatCentsToNGN(balance)}</div>
+          <Link to="/billing" className={buttonVariants({ className: "mt-3 w-full bg-white border border-slate-200 py-1.5 rounded-md text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50" })}>
+            Add Funds
           </Link>
           <Button variant="ghost" className="mt-4 w-full flex items-center justify-start text-slate-500 hover:text-slate-900 border border-slate-200" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -153,15 +141,12 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2 md:gap-4">
             <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden -ml-2">
-                  <Menu className="h-5 w-5 text-slate-600" />
-                </Button>
+              <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden -ml-2" />}>
+                <Menu className="h-5 w-5 text-slate-600" />
               </SheetTrigger>
               <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
-                <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-                  <PrinevestLogo />
-                  <h1 className="text-xl font-bold tracking-tight">Prinevest</h1>
+                <div className="p-6 border-b border-slate-100 flex items-center justify-center">
+                  <VverifyLogo className="w-12 h-12" />
                 </div>
                 <nav className="flex-1 px-4 py-4 space-y-1">
                   {navLinks.map((link) => (
@@ -181,11 +166,9 @@ export function Layout({ children }: { children: ReactNode }) {
                 </nav>
                 <div className="p-4 border-t border-slate-100 bg-slate-50">
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Wallet Balance</div>
-                  <div className="text-2xl font-bold text-slate-800">${(balance / 100).toFixed(2)}</div>
-                  <Link to="/billing">
-                    <Button className="mt-3 w-full bg-white border border-slate-200 py-1.5 rounded-md text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50">
-                      Add Funds
-                    </Button>
+                  <div className="text-2xl font-bold text-slate-800">{formatCentsToNGN(balance)}</div>
+                  <Link to="/billing" className={buttonVariants({ className: "mt-3 w-full bg-white border border-slate-200 py-1.5 rounded-md text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50" })}>
+                    Add Funds
                   </Link>
                   <Button variant="ghost" className="mt-4 w-full flex items-center justify-start text-slate-500 hover:text-slate-900 border border-slate-200" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-2" />
@@ -195,12 +178,11 @@ export function Layout({ children }: { children: ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="text-sm font-medium text-slate-500 hidden sm:inline"></span>
+            <div className="flex items-center gap-2 md:hidden">
+               <Link to="/">
+                  <VverifyLogo className="w-9 h-9" />
+               </Link>
             </div>
-            <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
-            <div className="text-sm text-slate-500 font-mono hidden sm:block">API Latency: 142ms</div>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="text-slate-400 hidden sm:flex">

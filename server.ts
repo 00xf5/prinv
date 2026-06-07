@@ -21,7 +21,7 @@ try {
 }
 
 export const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 app.use(cors());
 app.use(express.json());
@@ -47,6 +47,41 @@ app.get("/api/grizzly", async (req, res) => {
   } catch (err) {
     console.error("Grizzly API error:", err);
     res.status(500).send("Grizzly API error");
+  }
+});
+
+// Proxy Clearbit logo request to bypass iframe CSP/sandbox bounds
+app.get("/api/logo/:domain", async (req, res) => {
+  try {
+    const { domain } = req.params;
+    if (!domain) {
+      return res.status(400).send("Domain is required");
+    }
+
+    // Set a quick timeout of 2 seconds for external fetching
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const response = await fetch(`https://logo.clearbit.com/${domain}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return res.status(404).send("Logo not found");
+    }
+
+    const contentType = response.headers.get("content-type") || "image/png";
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.set("Content-Type", contentType);
+    res.set("Cache-Control", "public, max-age=86400"); // Cache for 24 hours
+    res.send(buffer);
+  } catch (err) {
+    // Gracefully return 404 in case of network restrictions, timeouts, DNS errors (EAI_AGAIN), etc.
+    // This allows the React client to instantly display the beautiful CSS fallback icon instead of hanging or returning 500.
+    res.status(404).send("Logo fallback");
   }
 });
 
@@ -137,6 +172,53 @@ app.post("/api/webhooks/pagsmile", async (req, res) => {
   } catch (err) {
     console.error("Webhook error:", err);
     res.status(500).send("Webhook error");
+  }
+});
+
+// Cancel and Refund Session
+app.post("/api/sessions/refund", async (req, res) => {
+  try {
+    if (!db) return res.status(500).send("Firestore not initialized");
+    const { sessionId, userId } = req.body;
+    
+    if (!sessionId || !userId) return res.status(400).send("Missing params");
+
+    await db.runTransaction(async (t) => {
+      const firestore = db as admin.firestore.Firestore;
+      const sessionRef = firestore.collection("sessions").doc(sessionId);
+      const sessionDoc = await t.get(sessionRef);
+      
+      if (!sessionDoc.exists) throw new Error("Session not found");
+      const sessionData = sessionDoc.data();
+      
+      if (sessionData?.userId !== userId) throw new Error("Unauthorized");
+      if (sessionData?.status === "cancelled" || sessionData?.status === "refunded") {
+        return; // Already refunded or cancelled
+      }
+      
+      // Hit Grizzly API to actually cancel if it is still active
+      if (sessionData?.status === "active") {
+        try {
+          const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${sessionData.grizzlyId}`;
+          await fetch(cancelUrl);
+        } catch (e) {
+          console.error("Grizzly cancel error:", e);
+        }
+      }
+
+      const costToRefund = sessionData?.cost || 0;
+      const userRef = firestore.collection("users").doc(userId);
+      const userDoc = await t.get(userRef);
+      const currentBalance = userDoc.exists ? userDoc.data()?.balance || 0 : 0;
+
+      t.update(userRef, { balance: currentBalance + costToRefund, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      t.update(sessionRef, { status: "refunded", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    });
+
+    res.json({ success: true, message: "Refunded successfully" });
+  } catch (err) {
+    console.error("Refund error:", err);
+    res.status(500).send("Refund error");
   }
 });
 
