@@ -8,8 +8,8 @@ import { doc, onSnapshot, runTransaction, collection } from "firebase/firestore"
 import { useExchangeRate } from "../lib/useExchangeRate";
 
 export function Billing() {
-  const { formatCentsToNGN, formatDollarsToNGN } = useExchangeRate();
-  const [amount, setAmount] = useState("10");
+  const { rate, formatCentsToNGN, formatNGNDirectly } = useExchangeRate();
+  const [amount, setAmount] = useState("15000");
   const [isProcessing, setIsProcessing] = useState(false);
   const [balance, setBalance] = useState<number>(0);
 
@@ -24,7 +24,7 @@ export function Billing() {
     }
   }, []);
 
-  const predefinedAmounts = ["5", "10", "20", "50", "100"];
+  const predefinedAmounts = ["1500", "5000", "15000", "30000", "50000"];
 
   const handleTopUp = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -34,7 +34,8 @@ export function Billing() {
 
     setIsProcessing(true);
     try {
-      const topupCents = parseFloat(amount) * 100;
+      const topupNgn = parseFloat(amount);
+      const topupCents = Math.round((topupNgn / rate) * 100);
       
       // Request payment creation from our backend
       const res = await fetch("/api/payments/create", {
@@ -97,10 +98,10 @@ export function Billing() {
                 <Button
                   key={preset}
                   variant={amount === preset ? "default" : "outline"}
-                  className={`w-full font-bold shadow-sm ${amount === preset ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                  className={`w-full font-bold shadow-sm ${amount === preset ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent' : 'border-slate-200 text-slate-700 hover:bg-slate-50'} px-0 text-xs sm:text-sm`}
                   onClick={() => setAmount(preset)}
                 >
-                  {formatDollarsToNGN(Number(preset))}
+                  {formatNGNDirectly(Number(preset))}
                 </Button>
               ))}
             </div>
@@ -110,8 +111,8 @@ export function Billing() {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                placeholder="Amount in ₦"
                 className="h-12 text-lg font-bold text-slate-900 border-slate-200 bg-slate-50 focus-visible:ring-indigo-500"
-                placeholder={`Custom Amount (e.g. ${formatDollarsToNGN(10)})`}
               />
             </div>
           </div>
@@ -119,7 +120,7 @@ export function Billing() {
             <Button className="w-full h-12 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" onClick={handleTopUp} disabled={isProcessing || !amount}>
               {isProcessing ? "Redirecting to Checkout..." : (
                 <>
-                  Pay {formatDollarsToNGN(parseFloat(amount) || 0)}
+                  Pay {formatNGNDirectly(parseFloat(amount) || 0)}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

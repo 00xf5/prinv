@@ -100,7 +100,7 @@ const getServiceLogoUrl = (code: string, name: string): string | null => {
   if (normName.includes("openai") || normName.includes("chatgpt")) return getProxyUrl("openai.com");
   if (normName.includes("uber")) return getProxyUrl("uber.com");
   if (normName.includes("spotify")) return getProxyUrl("spotify.com");
-  if (normName.includes("tinder")) return getProxyUrl("tinder.com");
+  if (normName.includes("tind")) return getProxyUrl("tinder.com");
   if (normName.includes("steam")) return getProxyUrl("steampowered.com");
   if (normName.includes("zoom")) return getProxyUrl("zoom.us");
   if (normName.includes("viber")) return getProxyUrl("viber.com");
@@ -639,9 +639,9 @@ const getInlineLogo = (code: string, name: string): InlineLogo | null => {
   if (normName.includes("microsoft") || normName.includes("outlook") || normName.includes("hotmail")) return INLINE_BRAND_LOGOS.ms;
   if (normName.includes("amazon") || normName.includes("prime")) return INLINE_BRAND_LOGOS.am;
   if (normName.includes("steam")) return INLINE_BRAND_LOGOS.st;
-  if (normName.includes("tinder")) return INLINE_BRAND_LOGOS.ti;
+  if (normName.includes("tind")) return INLINE_BRAND_LOGOS.ti;
   if (normName.includes("bumble")) return INLINE_BRAND_LOGOS.bm;
-  if (normName.includes("hinge")) return INLINE_BRAND_LOGOS.hi;
+  if (normName.includes("hing")) return INLINE_BRAND_LOGOS.hi;
   if (normName.includes("badoo")) return INLINE_BRAND_LOGOS.bd;
   if (normName.includes("okcupid")) return INLINE_BRAND_LOGOS.oc;
   if (normName.includes("pof") || normName.includes("plenty of fish")) return INLINE_BRAND_LOGOS.pf;
@@ -1137,87 +1137,42 @@ export function BuyNumber() {
 
     setIsBuying(true);
     const cost = currentPrice;
-    const userRef = doc(db, "users", auth.currentUser.uid);
 
     try {
-      // 1. Transactionally check and PRE-RESERVE the balance to eliminate any race condition bugs
-      await runTransaction(db, async (transaction) => {
-        const uDoc = await transaction.get(userRef);
-        if (!uDoc.exists()) throw new Error("USER_NOT_FOUND");
-        
-        const currentBal = uDoc.data().balance || 0;
-        if (currentBal < cost) {
-          throw new Error("INSUFFICIENT_FUNDS");
+      const res = await fetch("/api/buy-number", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: auth.currentUser.uid,
+          serviceId: selectedService.id,
+          grizzlyCountryId: selectedCountry.grizzlyId,
+          serviceName: selectedService.name,
+          countryName: selectedCountry.name,
+          cost: cost
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        if (errText === "NO_NUMBERS") {
+          toast.error("No numbers available for this country/service currently.");
+        } else if (errText === "NO_BALANCE") {
+          toast.error("Platform API Balance exhausted. Please contact admin.");
+        } else if (errText === "Insufficient balance") {
+          toast.error("Insufficient balance. Please add funds.");
+        } else {
+          toast.error("Error: " + errText);
         }
-        transaction.update(userRef, { balance: currentBal - cost, updatedAt: Date.now() });
-      });
-    } catch (err: any) {
-      if (err.message === "INSUFFICIENT_FUNDS") {
-         toast.error("Insufficient balance. Please add funds.");
-      } else {
-         toast.error("Failed to verify balance.");
-      }
-      setIsBuying(false);
-      return;
-    }
-
-    let data = "";
-    try {
-      // 2. Make Grizzly API Call after balance is already safely reserved
-      const res = await fetch(`/api/grizzly?action=getNumber&service=${selectedService.id}&country=${selectedCountry.grizzlyId}`);
-      data = await res.text();
-    } catch (err: any) {
-      console.error("Network error API call", err);
-    }
-
-    // 3. Handle External API failure: Refund the pre-reserved balance
-    if (!data || data === "NO_NUMBERS" || data === "NO_BALANCE" || !data.startsWith("ACCESS_NUMBER:")) {
-      try {
-         await runTransaction(db, async (t) => {
-            const uDoc = await t.get(userRef);
-            t.update(userRef, { balance: (uDoc.data()?.balance || 0) + cost, updatedAt: Date.now() });
-         });
-      } catch (refundErr) {
-         console.error("CRITICAL: Failed to refund user after API error", refundErr);
+        setIsBuying(false);
+        return;
       }
 
-      if (data === "NO_NUMBERS") {
-        toast.error("No numbers available for this country/service currently.");
-      } else if (data === "NO_BALANCE") {
-        toast.error("System error: Provider out of balance.");
-      } else {
-        toast.error(`Error: Could not retrieve a number right now.`);
-      }
-      setIsBuying(false);
-      return;
-    }
-
-    try {
-      // data format: ACCESS_NUMBER:$id:$number
-      const [, grizzlyId, number] = data.split(":");
-
-      // 4. Store active session
-      const sessionRef = doc(collection(db, "sessions"));
-      await runTransaction(db, async (t) => {
-        t.set(sessionRef, {
-          userId: auth.currentUser!.uid,
-          grizzlyId: grizzlyId,
-          number: number,
-          service: selectedService.name,
-          country: selectedCountry.name,
-          cost: cost,
-          status: "active",
-          createdAt: Date.now(),
-          expiresAt: Date.now() + 20 * 60 * 1000 // 20 mins
-        });
-      });
-
+      await res.json();
       toast.success("Number rented successfully!");
       navigate("/dashboard");
-
     } catch (err: any) {
       console.error(err);
-      toast.error("Failed to rent number: " + (err.message || ""));
+      toast.error(err.message || "Something went wrong.");
     } finally {
       setIsBuying(false);
     }

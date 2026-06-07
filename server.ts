@@ -34,10 +34,17 @@ app.get("/api/health", (req, res) => {
 const GRIZZLY_API_KEY = process.env.GRIZZLY_API_KEY || "7d61414bc5b058d8e5b19caf5c502366";
 const GRIZZLY_URL = "https://api.grizzlysms.com/stubs/handler_api.php";
 
-// Proxy to Grizzly SMS API
+// Proxy to Grizzly SMS API (SAFE READ-ONLY ACTIONS)
 app.get("/api/grizzly", async (req, res) => {
   try {
     const queryParams = new URLSearchParams(req.query as any);
+    
+    const action = queryParams.get("action");
+    // BLOCK DANGEROUS ACTIONS
+    if (action === "getNumber" || action === "setStatus") {
+      return res.status(403).send("Forbidden Action. Use dedicated endpoints.");
+    }
+
     queryParams.set("api_key", GRIZZLY_API_KEY);
     
     const url = `${GRIZZLY_URL}?${queryParams.toString()}`;
@@ -47,6 +54,81 @@ app.get("/api/grizzly", async (req, res) => {
   } catch (err) {
     console.error("Grizzly API error:", err);
     res.status(500).send("Grizzly API error");
+  }
+});
+
+app.post("/api/buy-number", async (req, res) => {
+  try {
+    if (!db) return res.status(500).send("Firestore not initialized");
+    const { userId, serviceId, grizzlyCountryId, serviceName, countryName, cost } = req.body;
+    
+    if (!userId || !serviceId || !grizzlyCountryId || !cost) {
+      return res.status(400).send("Missing parameters");
+    }
+
+    const firestore = db as admin.firestore.Firestore;
+    const userRef = firestore.collection("users").doc(userId);
+
+    // 1. Transactionally lock balance in backend to eliminate race conditions
+    let hasFunds = false;
+    await firestore.runTransaction(async (t) => {
+      const userDoc = await t.get(userRef);
+      if (!userDoc.exists) throw new Error("User not found");
+      const currentBal = userDoc.data()?.balance || 0;
+      if (currentBal >= cost) {
+        hasFunds = true;
+        t.update(userRef, { balance: currentBal - cost, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      }
+    });
+
+    if (!hasFunds) {
+      return res.status(400).send("Insufficient balance");
+    }
+
+    // 2. Call external Grizzly API securely from backend
+    let data = "";
+    try {
+      const grizzlyUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=getNumber&service=${serviceId}&country=${grizzlyCountryId}`;
+      const apiRes = await fetch(grizzlyUrl);
+      data = await apiRes.text();
+    } catch (e) {
+      console.error("Grizzly fetch error:", e);
+    }
+
+    // 3. Rollback if external API failed
+    if (!data || data === "NO_NUMBERS" || data === "NO_BALANCE" || !data.startsWith("ACCESS_NUMBER:")) {
+       try {
+         await firestore.runTransaction(async (t) => {
+           const uDoc = await t.get(userRef);
+           t.update(userRef, { balance: (uDoc.data()?.balance || 0) + cost, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+         });
+       } catch (refundError) {
+         console.error("FATAL: Failed to refund user!", refundError);
+       }
+       return res.status(400).send(data || "External API Error");
+    }
+
+    // data format: ACCESS_NUMBER:$id:$number
+    const [, grizzlyId, number] = data.split(":");
+
+    // 4. Create Session 
+    const sessionRef = firestore.collection("sessions").doc();
+    await sessionRef.set({
+      userId: userId,
+      grizzlyId: grizzlyId,
+      number: number,
+      service: serviceName,
+      country: countryName,
+      cost: cost,
+      status: "active",
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 20 * 60 * 1000 // 20 mins
+    });
+
+    res.json({ success: true, sessionId: sessionRef.id, number, grizzlyId });
+  } catch (error) {
+    console.error("Buy error:", error);
+    res.status(500).send(error instanceof Error ? error.message : "Buy error");
   }
 });
 

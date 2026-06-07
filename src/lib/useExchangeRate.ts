@@ -37,5 +37,10 @@ export function useExchangeRate() {
     return "₦" + ngnAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  return { rate, loading, formatCentsToNGN, formatDollarsToNGN };
+  // Format NGN amount directly directly to NGN string
+  const formatNGNDirectly = (ngn: number): string => {
+    return "₦" + ngn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  return { rate, loading, formatCentsToNGN, formatDollarsToNGN, formatNGNDirectly };
 }
