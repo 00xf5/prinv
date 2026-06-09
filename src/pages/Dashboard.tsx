@@ -4,6 +4,7 @@ import { auth, db } from "../lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Wallet, Phone, ArrowUpRight, Activity } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { useExchangeRate } from "../lib/useExchangeRate";
 
@@ -27,7 +28,20 @@ export function Dashboard() {
       where("status", "==", "active")
     );
     const unsubSessions = onSnapshot(q, (snapshot) => {
-      setActiveSessions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const sessions: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setActiveSessions(sessions);
+      
+      // Lazy Auto-Cleanup: Refund active sessions that have expired
+      const now = Date.now();
+      sessions.forEach(session => {
+        if (session.status === 'active' && session.expiresAt && session.expiresAt < now) {
+          fetch("/api/sessions/refund", {
+             method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+          }).catch(console.error);
+        }
+      });
     });
 
     return () => {
@@ -130,12 +144,19 @@ export function Dashboard() {
                           variant="outline" 
                           size="sm" 
                           className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                          onClick={() => {
-                            fetch("/api/sessions/refund", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
-                            });
+                          onClick={async () => {
+                            toast.loading("Cancelling...", { id: `cancel-${session.id}` });
+                            try {
+                              const res = await fetch("/api/sessions/refund", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+                              });
+                              if (!res.ok) throw new Error("Failed to refund");
+                              toast.success("Number cancelled and refunded!", { id: `cancel-${session.id}` });
+                            } catch (e) {
+                              toast.error("Refund failed. Number might be already used.", { id: `cancel-${session.id}` });
+                            }
                           }}
                         >
                           Cancel

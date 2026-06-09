@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 
-let db: admin.firestore.Firestore | null = null;
+let db: FirebaseFirestore.Firestore | null = null;
 try {
   if (!admin.apps.length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
@@ -15,7 +16,7 @@ try {
       admin.initializeApp(); // relies on Application Default Credentials
     }
   }
-  db = admin.firestore();
+  db = getFirestore(admin.apps[0], "ai-studio-f8bd9da6-914c-49f9-b6e2-0b3e05d3bd40");
 } catch (error) {
   console.warn("Failed to initialize Firebase Admin. Firestore routes will fail.", error);
 }
@@ -167,27 +168,83 @@ app.get("/api/logo/:domain", async (req, res) => {
   }
 });
 
-// Create Payment Intent (mock Pagsmile)
+// Create Payment Intent (Monnify Init Transaction)
 app.post("/api/payments/create", async (req, res) => {
   try {
     if (!db) return res.status(500).send("Firestore not initialized");
     const { userId, amountInCents } = req.body;
     if (!userId || !amountInCents) return res.status(400).send("Missing params");
 
+    // Fetch Monnify credentials from Firestore
+    const firestore = db as FirebaseFirestore.Firestore;
+    const settingsDoc = await firestore.collection("system").doc("settings").get();
+    const settings = settingsDoc.data();
+    if (!settings || !settings.monnifyApiKey || !settings.monnifySecretKey || !settings.monnifyContractCode) {
+      return res.status(500).send("Monnify credentials not configured in Admin Settings");
+    }
+
+    const { monnifyApiKey, monnifySecretKey, monnifyContractCode } = settings;
+
     // 1. Create a pending transaction in Firestore
-    const txRef = db.collection("transactions").doc();
+    const txRef = firestore.collection("transactions").doc();
+    
+    // User info for Monnify
+    const userDoc = await firestore.collection("users").doc(userId).get();
+    const userEmail = userDoc.data()?.email || "user@example.com";
+    
     await txRef.set({
       userId,
       amount: amountInCents,
       type: "topup",
       status: "pending",
-      provider: "pagsmile",
+      provider: "monnify",
       createdAt: Date.now()
     });
 
-    // 2. Return a mock checkout URL and the tx id to poll
-    const checkoutUrl = `/api/payments/test-pay?txId=${txRef.id}&amount=${amountInCents}`;
+    // 2. Authenticate with Monnify Config (using base64 encoded ApiKey:SecretKey)
+    const base64Token = Buffer.from(`${monnifyApiKey}:${monnifySecretKey}`).toString('base64');
+    const authRes = await fetch("https://api.monnify.com/api/v1/auth/login", {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${base64Token}`
+      }
+    });
+    const authData = await authRes.json();
+    if (!authData.requestSuccessful) {
+      console.error("Monnify auth failed:", authData);
+      return res.status(500).send("Payment gateway auth failed");
+    }
+    const token = authData.responseBody.accessToken;
+
+    // 3. Initialize Transaction
+    const ngnAmount = amountInCents / 100; // Monnify expects amounts in whole Naira (or decimal)
+    const initRes = await fetch("https://api.monnify.com/api/v1/merchant/transactions/init-transaction", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: ngnAmount,
+        customerName: "Dashboard User",
+        customerEmail: userEmail,
+        paymentReference: txRef.id,
+        paymentDescription: "Wallet Topup",
+        currencyCode: "NGN",
+        contractCode: monnifyContractCode,
+        paymentMethods: ["CARD", "ACCOUNT_TRANSFER", "USSD", "PHONE_NUMBER"]
+      })
+    });
+
+    const initData = await initRes.json();
+    if (!initData.requestSuccessful) {
+      console.error("Monnify init failed:", initData);
+      return res.status(500).send("Payment gateway init failed");
+    }
+
+    const checkoutUrl = initData.responseBody.checkoutUrl;
     res.json({ txId: txRef.id, checkoutUrl });
+
   } catch (err) {
     console.error("Create payment error:", err);
     res.status(500).send("Create payment error");
@@ -218,19 +275,27 @@ app.get("/api/payments/test-pay", async (req, res) => {
   }
 });
 
-// Webhook for Pagsmile
-app.post("/api/webhooks/pagsmile", async (req, res) => {
+// Webhook for Monnify
+app.post("/api/webhooks/monnify", async (req, res) => {
   try {
     if (!db) return res.status(500).send("Firestore not initialized");
     
     // We expect the external provider to send back our reference (txId)
-    const { txId, amountInCents, status } = req.body;
+    // Monnify sends details nested in `eventData`
+    const { eventData } = req.body;
+    if (!eventData) return res.status(400).send("Invalid hook payload");
+
+    const status = eventData.paymentStatus;
+    const txId = eventData.paymentReference;
+    const amountPaid = eventData.amountPaid;
     
+    const amountInCents = Math.round(Number(amountPaid) * 100);
+
     if (status === "PAID" && txId) {
       // 2. Transact safely using Firebase Admin
       await db.runTransaction(async (t) => {
         // Assert db is not null to TS
-        const firestore = db as admin.firestore.Firestore;
+        const firestore = db as FirebaseFirestore.Firestore;
         const txRef = firestore.collection("transactions").doc(txId);
         const txDoc = await t.get(txRef);
         
