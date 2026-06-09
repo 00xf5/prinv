@@ -94,6 +94,7 @@ export function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="text-base"
               />
             </div>
             <div className="space-y-2">
@@ -106,6 +107,7 @@ export function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="text-base"
               />
             </div>
           </CardContent>

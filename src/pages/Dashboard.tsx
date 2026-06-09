@@ -136,6 +136,7 @@ export function Dashboard() {
               </p>
             </div>
           ) : (
+            <div className="overflow-x-auto w-full">
             <table className="w-full text-left">
               <thead className="bg-white border-b border-slate-100">
                 <tr>
@@ -201,6 +202,7 @@ export function Dashboard() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

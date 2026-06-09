@@ -13,7 +13,7 @@ try {
         credential: admin.credential.cert(serviceAccount)
       });
     } else {
-      admin.initializeApp(); // relies on Application Default Credentials
+      admin.initializeApp({ projectId: "gen-lang-client-0726044280" }); // relies on Application Default Credentials
     }
   }
   db = getFirestore(admin.apps[0], "ai-studio-f8bd9da6-914c-49f9-b6e2-0b3e05d3bd40");
