@@ -369,6 +369,68 @@ app.post("/api/sessions/refund", async (req, res) => {
   }
 });
 
+// Check Session Status (for codes)
+app.post("/api/sessions/check", async (req, res) => {
+  try {
+    if (!db) return res.status(500).send("Firestore not initialized");
+    const { sessionId, userId } = req.body;
+    if (!sessionId || !userId) return res.status(400).send("Missing params");
+
+    const firestore = db as admin.firestore.Firestore;
+    const sessionRef = firestore.collection("sessions").doc(sessionId);
+    const sessionDoc = await sessionRef.get();
+    
+    if (!sessionDoc.exists) return res.status(404).send("Not found");
+    const data = sessionDoc.data();
+    if (!data || data.userId !== userId) return res.status(403).send("Forbidden");
+    if (data.status !== "active") return res.json({ status: data.status, code: data.code });
+
+    const statusUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=getStatus&id=${data.grizzlyId}`;
+    const apiRes = await fetch(statusUrl);
+    const text = await apiRes.text();
+    
+    if (text.startsWith("STATUS_OK")) {
+       const codeParts = text.split(":");
+       const rawCode = codeParts.length > 1 ? codeParts[1] : codeParts[0];
+       // Some providers return STATUS_OK:code
+       
+       await sessionRef.update({
+         status: "completed",
+         code: rawCode,
+         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+       });
+       
+       // Add to history messages
+       await firestore.collection("messages").add({
+         userId: userId,
+         sessionId: sessionId,
+         number: data.number,
+         service: data.service,
+         text: rawCode,
+         sender: data.service,
+         receivedAt: admin.firestore.FieldValue.serverTimestamp()
+       });
+       return res.json({ status: "completed", code: rawCode });
+    } else if (text === "STATUS_CANCEL") {
+       await sessionRef.update({ status: "cancelled", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+       // Refund User
+       const userRef = firestore.collection("users").doc(userId);
+       await firestore.runTransaction(async (t) => {
+          const uDoc = await t.get(userRef);
+          if (uDoc.exists) {
+             t.update(userRef, { balance: (uDoc.data()?.balance || 0) + (data.cost || 0)});
+          }
+       });
+       return res.json({ status: "cancelled" });
+    } else {
+       return res.json({ status: "active" }); // still waiting (STATUS_WAIT_CODE)
+    }
+  } catch (e) {
+    console.error("Check error:", e);
+    res.status(500).send("Error checking session");
+  }
+});
+
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

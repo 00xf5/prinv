@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { auth, db } from "../lib/firebase";
-import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Wallet, Phone, ArrowUpRight, Activity } from "lucide-react";
 import { toast } from "sonner";
@@ -21,11 +21,12 @@ export function Dashboard() {
       if (doc.exists()) setBalance(doc.data().balance || 0);
     });
 
-    // Sub to active sessions changes
+    // Sub to recent sessions (active + completed)
     const q = query(
       collection(db, "sessions"),
       where("userId", "==", auth.currentUser.uid),
-      where("status", "==", "active")
+      orderBy("createdAt", "desc"),
+      limit(5)
     );
     const unsubSessions = onSnapshot(q, (snapshot) => {
       const sessions: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -44,9 +45,26 @@ export function Dashboard() {
       });
     });
 
+    // Poll active sessions on Grizzly every 5 seconds
+    const interval = setInterval(() => {
+       setActiveSessions(currSessions => {
+         currSessions.forEach(session => {
+            if (session.status === "active") {
+              fetch("/api/sessions/check", {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+              }).catch(console.error);
+            }
+         });
+         return currSessions;
+       });
+    }, 5000);
+
     return () => {
       unsubUser();
       unsubSessions();
+      clearInterval(interval);
     };
   }, []);
 
@@ -84,7 +102,7 @@ export function Dashboard() {
                 <Phone className="h-4 w-4" />
               </div>
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-4 md:mb-0">{activeSessions.length}</div>
+            <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-4 md:mb-0">{activeSessions.filter(s => s.status === 'active').length}</div>
             <Link to="/buy" className={buttonVariants({ size: "sm", className: "mt-0 md:mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full font-bold text-xs py-1 h-8 md:h-9" })}>
               Rent Number
             </Link>
@@ -97,7 +115,7 @@ export function Dashboard() {
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Active Numbers</h2>
+          <h2 className="text-lg font-bold text-slate-900">Recent Numbers</h2>
           <Link to="/inbox" className={buttonVariants({ variant: "ghost", className: "text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" })}>
             View All <ArrowUpRight className="ml-1 h-4 w-4" />
           </Link>
@@ -106,15 +124,15 @@ export function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h2 className="font-bold text-slate-900 text-sm">Recently Rented</h2>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">{activeSessions.length} ACTIVE</span>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">{activeSessions.filter(s => s.status === 'active').length} ACTIVE</span>
           </div>
           
           {activeSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center bg-white">
               <Phone className="h-10 w-10 text-slate-300 mb-4" />
-              <h3 className="text-sm font-bold text-slate-900 mb-1">No active numbers</h3>
+              <h3 className="text-sm font-bold text-slate-900 mb-1">No numbers rented</h3>
               <p className="text-slate-500 text-sm max-w-sm mb-6">
-                You don't have any active virtual numbers right now. Rent a number to start receiving SMS.
+                You haven't rented any numbers yet. Rent a number to start receiving SMS.
               </p>
             </div>
           ) : (
@@ -133,34 +151,50 @@ export function Dashboard() {
                     <td className="px-6 py-4 font-mono text-sm text-slate-900">{session.number}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">{session.service} ({session.country})</td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="flex items-center text-emerald-600 font-medium">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Waiting for SMS...
-                      </span>
+                      {session.status === 'completed' ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SMS Code</span>
+                          <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block w-max">
+                            {session.code || 'Received'}
+                          </span>
+                        </div>
+                      ) : session.status === 'active' ? (
+                        <span className="flex items-center text-emerald-600 font-medium">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Waiting...
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-medium capitalize">{session.status}</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right text-sm text-slate-500 font-mono">
                       <div className="flex items-center justify-end gap-3">
-                        {format(new Date(session.expiresAt), "HH:mm:ss")}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                          onClick={async () => {
-                            toast.loading("Cancelling...", { id: `cancel-${session.id}` });
-                            try {
-                              const res = await fetch("/api/sessions/refund", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
-                              });
-                              if (!res.ok) throw new Error("Failed to refund");
-                              toast.success("Number cancelled and refunded!", { id: `cancel-${session.id}` });
-                            } catch (e) {
-                              toast.error("Refund failed. Number might be already used.", { id: `cancel-${session.id}` });
-                            }
-                          }}
-                        >
-                          Cancel
-                        </Button>
+                        {format(new Date(session.expiresAt), "HH:mm")}
+                        {session.status === 'active' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={async () => {
+                              toast.loading("Cancelling...", { id: `cancel-${session.id}` });
+                              try {
+                                const res = await fetch("/api/sessions/refund", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ sessionId: session.id, userId: auth.currentUser!.uid })
+                                });
+                                if (!res.ok) throw new Error("Failed to refund");
+                                toast.success("Number cancelled and refunded!", { id: `cancel-${session.id}` });
+                              } catch (e) {
+                                toast.error("Refund failed. Number might be already used.", { id: `cancel-${session.id}` });
+                              }
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        {session.status === 'completed' && (
+                           <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Done</span>
+                        )}
                       </div>
                     </td>
                   </tr>
