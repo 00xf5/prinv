@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "../lib/firebase";
-import { doc, runTransaction, collection, getDoc } from "firebase/firestore";
+import { doc, runTransaction, collection, getDoc, setDoc } from "firebase/firestore";
 import { useExchangeRate } from "../lib/useExchangeRate";
 
 interface Country {
@@ -1155,27 +1155,51 @@ export function BuyNumber() {
     const cost = currentPrice;
 
     try {
+      // 1. Transactionally lock balance in frontend
+      let hasFunds = false;
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      
+      await runTransaction(db, async (t) => {
+        const userDoc = await t.get(userRef);
+        if (!userDoc.exists()) throw new Error("User not found");
+        const currentBal = userDoc.data()?.balance || 0;
+        if (currentBal >= cost) {
+          hasFunds = true;
+          t.update(userRef, { balance: currentBal - cost, updatedAt: new Date().getTime() });
+        }
+      });
+
+      if (!hasFunds) {
+        toast.error("Insufficient balance. Please add funds.");
+        setIsBuying(false);
+        return;
+      }
+
+      // 2. Call backend proxy to get a number
       const res = await fetch("/api/buy-number", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: auth.currentUser.uid,
           serviceId: selectedService.id,
           grizzlyCountryId: selectedCountry.grizzlyId,
-          serviceName: selectedService.name,
-          countryName: selectedCountry.name,
-          cost: cost
         })
       });
 
       if (!res.ok) {
         const errText = await res.text();
+        
+        // 3. Rollback balance
+        await runTransaction(db, async (t) => {
+           const uDoc = await t.get(userRef);
+           if (uDoc.exists()) {
+             t.update(userRef, { balance: (uDoc.data()?.balance || 0) + cost, updatedAt: new Date().getTime() });
+           }
+        });
+
         if (errText === "NO_NUMBERS") {
           toast.error("No numbers available for this country/service currently.");
         } else if (errText === "NO_BALANCE") {
           toast.error("Platform API Balance exhausted. Please contact admin.");
-        } else if (errText === "Insufficient balance") {
-          toast.error("Insufficient balance. Please add funds.");
         } else {
           toast.error("Error: " + errText);
         }
@@ -1183,7 +1207,22 @@ export function BuyNumber() {
         return;
       }
 
-      await res.json();
+      const { number, grizzlyId } = await res.json();
+
+      // 4. Create Session 
+      const sessionRef = doc(collection(db, "sessions"));
+      await setDoc(sessionRef, {
+        userId: auth.currentUser.uid,
+        grizzlyId: grizzlyId,
+        number: number,
+        service: selectedService.name,
+        country: selectedCountry.name,
+        cost: cost,
+        status: "active",
+        createdAt: new Date().getTime(),
+        expiresAt: new Date().getTime() + 20 * 60 * 1000 // 20 mins
+      });
+
       toast.success("Number rented successfully!");
       navigate("/dashboard");
     } catch (err: any) {

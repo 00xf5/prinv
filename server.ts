@@ -12,11 +12,11 @@ try {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
+      db = getFirestore(admin.apps[0], "ai-studio-f8bd9da6-914c-49f9-b6e2-0b3e05d3bd40");
     } else {
-      admin.initializeApp({ projectId: "gen-lang-client-0726044280" }); // relies on Application Default Credentials
+      console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Admin operations disabled.");
     }
   }
-  db = getFirestore(admin.apps[0], "ai-studio-f8bd9da6-914c-49f9-b6e2-0b3e05d3bd40");
 } catch (error) {
   console.warn("Failed to initialize Firebase Admin. Firestore routes will fail.", error);
 }
@@ -60,33 +60,13 @@ app.get("/api/grizzly", async (req, res) => {
 
 app.post("/api/buy-number", async (req, res) => {
   try {
-    if (!db) return res.status(500).send("Firestore not initialized");
-    const { userId, serviceId, grizzlyCountryId, serviceName, countryName, cost } = req.body;
+    const { serviceId, grizzlyCountryId } = req.body;
     
-    if (!userId || !serviceId || !grizzlyCountryId || !cost) {
+    if (!serviceId || !grizzlyCountryId) {
       return res.status(400).send("Missing parameters");
     }
 
-    const firestore = db as admin.firestore.Firestore;
-    const userRef = firestore.collection("users").doc(userId);
-
-    // 1. Transactionally lock balance in backend to eliminate race conditions
-    let hasFunds = false;
-    await firestore.runTransaction(async (t) => {
-      const userDoc = await t.get(userRef);
-      if (!userDoc.exists) throw new Error("User not found");
-      const currentBal = userDoc.data()?.balance || 0;
-      if (currentBal >= cost) {
-        hasFunds = true;
-        t.update(userRef, { balance: currentBal - cost, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-      }
-    });
-
-    if (!hasFunds) {
-      return res.status(400).send("Insufficient balance");
-    }
-
-    // 2. Call external Grizzly API securely from backend
+    // Proxy the request securely to Grizzly
     let data = "";
     try {
       const grizzlyUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=getNumber&service=${serviceId}&country=${grizzlyCountryId}`;
@@ -94,39 +74,17 @@ app.post("/api/buy-number", async (req, res) => {
       data = await apiRes.text();
     } catch (e) {
       console.error("Grizzly fetch error:", e);
+      return res.status(500).send("Grizzly Proxy Error");
     }
 
-    // 3. Rollback if external API failed
     if (!data || data === "NO_NUMBERS" || data === "NO_BALANCE" || !data.startsWith("ACCESS_NUMBER:")) {
-       try {
-         await firestore.runTransaction(async (t) => {
-           const uDoc = await t.get(userRef);
-           t.update(userRef, { balance: (uDoc.data()?.balance || 0) + cost, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-         });
-       } catch (refundError) {
-         console.error("FATAL: Failed to refund user!", refundError);
-       }
        return res.status(400).send(data || "External API Error");
     }
 
-    // data format: ACCESS_NUMBER:$id:$number
+    // data format: ACCESS_NUMBER:$grizzlyId:$number
     const [, grizzlyId, number] = data.split(":");
 
-    // 4. Create Session 
-    const sessionRef = firestore.collection("sessions").doc();
-    await sessionRef.set({
-      userId: userId,
-      grizzlyId: grizzlyId,
-      number: number,
-      service: serviceName,
-      country: countryName,
-      cost: cost,
-      status: "active",
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 20 * 60 * 1000 // 20 mins
-    });
-
-    res.json({ success: true, sessionId: sessionRef.id, number, grizzlyId });
+    res.json({ success: true, number, grizzlyId });
   } catch (error) {
     console.error("Buy error:", error);
     res.status(500).send(error instanceof Error ? error.message : "Buy error");
@@ -322,112 +280,18 @@ app.post("/api/webhooks/monnify", async (req, res) => {
   }
 });
 
-// Cancel and Refund Session
-app.post("/api/sessions/refund", async (req, res) => {
+// Cancel and Refund Session (Proxy only)
+app.post("/api/cancel-number", async (req, res) => {
   try {
-    if (!db) return res.status(500).send("Firestore not initialized");
-    const { sessionId, userId } = req.body;
+    const { grizzlyId } = req.body;
+    if (!grizzlyId) return res.status(400).send("Missing grizzlyId");
     
-    if (!sessionId || !userId) return res.status(400).send("Missing params");
-
-    await db.runTransaction(async (t) => {
-      const firestore = db as admin.firestore.Firestore;
-      const sessionRef = firestore.collection("sessions").doc(sessionId);
-      const sessionDoc = await t.get(sessionRef);
-      
-      if (!sessionDoc.exists) throw new Error("Session not found");
-      const sessionData = sessionDoc.data();
-      
-      if (sessionData?.userId !== userId) throw new Error("Unauthorized");
-      if (sessionData?.status === "cancelled" || sessionData?.status === "refunded") {
-        return; // Already refunded or cancelled
-      }
-      
-      // Hit Grizzly API to actually cancel if it is still active
-      if (sessionData?.status === "active") {
-        try {
-          const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${sessionData.grizzlyId}`;
-          await fetch(cancelUrl);
-        } catch (e) {
-          console.error("Grizzly cancel error:", e);
-        }
-      }
-
-      const costToRefund = sessionData?.cost || 0;
-      const userRef = firestore.collection("users").doc(userId);
-      const userDoc = await t.get(userRef);
-      const currentBalance = userDoc.exists ? userDoc.data()?.balance || 0 : 0;
-
-      t.update(userRef, { balance: currentBalance + costToRefund, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-      t.update(sessionRef, { status: "refunded", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-    });
-
-    res.json({ success: true, message: "Refunded successfully" });
+    const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${grizzlyId}`;
+    await fetch(cancelUrl);
+    res.json({ success: true });
   } catch (err) {
-    console.error("Refund error:", err);
-    res.status(500).send("Refund error");
-  }
-});
-
-// Check Session Status (for codes)
-app.post("/api/sessions/check", async (req, res) => {
-  try {
-    if (!db) return res.status(500).send("Firestore not initialized");
-    const { sessionId, userId } = req.body;
-    if (!sessionId || !userId) return res.status(400).send("Missing params");
-
-    const firestore = db as admin.firestore.Firestore;
-    const sessionRef = firestore.collection("sessions").doc(sessionId);
-    const sessionDoc = await sessionRef.get();
-    
-    if (!sessionDoc.exists) return res.status(404).send("Not found");
-    const data = sessionDoc.data();
-    if (!data || data.userId !== userId) return res.status(403).send("Forbidden");
-    if (data.status !== "active") return res.json({ status: data.status, code: data.code });
-
-    const statusUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=getStatus&id=${data.grizzlyId}`;
-    const apiRes = await fetch(statusUrl);
-    const text = await apiRes.text();
-    
-    if (text.startsWith("STATUS_OK")) {
-       const codeParts = text.split(":");
-       const rawCode = codeParts.length > 1 ? codeParts[1] : codeParts[0];
-       // Some providers return STATUS_OK:code
-       
-       await sessionRef.update({
-         status: "completed",
-         code: rawCode,
-         updatedAt: admin.firestore.FieldValue.serverTimestamp()
-       });
-       
-       // Add to history messages
-       await firestore.collection("messages").add({
-         userId: userId,
-         sessionId: sessionId,
-         number: data.number,
-         service: data.service,
-         text: rawCode,
-         sender: data.service,
-         receivedAt: admin.firestore.FieldValue.serverTimestamp()
-       });
-       return res.json({ status: "completed", code: rawCode });
-    } else if (text === "STATUS_CANCEL") {
-       await sessionRef.update({ status: "cancelled", updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-       // Refund User
-       const userRef = firestore.collection("users").doc(userId);
-       await firestore.runTransaction(async (t) => {
-          const uDoc = await t.get(userRef);
-          if (uDoc.exists) {
-             t.update(userRef, { balance: (uDoc.data()?.balance || 0) + (data.cost || 0)});
-          }
-       });
-       return res.json({ status: "cancelled" });
-    } else {
-       return res.json({ status: "active" }); // still waiting (STATUS_WAIT_CODE)
-    }
-  } catch (e) {
-    console.error("Check error:", e);
-    res.status(500).send("Error checking session");
+    console.error("Cancel proxy error:", err);
+    res.status(500).send("Cancel error");
   }
 });
 
