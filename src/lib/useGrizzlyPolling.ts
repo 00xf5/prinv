@@ -10,6 +10,7 @@ interface GrizzlyActiveSession {
   number?: string;
   service?: string;
   cost?: number;
+  expiresAt?: number;
 }
 
 export function useGrizzlyPolling() {

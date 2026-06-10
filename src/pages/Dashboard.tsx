@@ -123,61 +123,118 @@ export function Dashboard() {
               </p>
             </div>
           ) : (
-            <div className="max-h-[400px] overflow-y-auto overflow-x-auto w-full">
-            <table className="w-full text-left">
-              <thead className="bg-white border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Number</th>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Service</th>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Status</th>
-                  <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase text-right">Expires</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
+            <div className="max-h-[400px] overflow-y-auto w-full">
+              {/* Mobile View */}
+              <div className="md:hidden divide-y divide-slate-100">
                 {activeSessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-sm text-slate-900">
-                      <div className="flex items-center gap-2">
-                        {session.number}
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-indigo-600" onClick={() => { navigator.clipboard.writeText(session.number); toast.success("Copied!"); }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                        </Button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{session.service} ({session.country})</td>
-                    <td className="px-6 py-4 text-sm">
-                      {session.status === 'completed' ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SMS Code</span>
-                          <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block w-max">
-                            {session.code || 'Received'}
-                          </span>
-                        </div>
-                      ) : session.status === 'active' ? (
-                        <span className="flex items-center text-emerald-600 font-medium">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Waiting...
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-medium capitalize">{session.status}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm text-slate-500 font-mono">
-                      <div className="flex items-center justify-end gap-3">
+                  <div key={session.id} className="p-4 flex flex-col gap-3 bg-white hover:bg-slate-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <div className="text-sm font-bold text-slate-900">{session.service}</div>
+                         <div className="text-xs text-slate-500">{session.country}</div>
+                       </div>
+                       <div className="text-right">
                         {session.status === 'active' ? (
-                          <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded">
+                          <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded text-xs font-mono">
                             <Countdown expiresAt={session.expiresAt} />
                           </span>
                         ) : session.status === 'completed' ? (
                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Done</span>
                         ) : (
-                           <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded capitalize">{session.status}</span>
+                           <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded capitalize">{session.status}</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
+                       </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-end">
+                       <div>
+                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Number</div>
+                         <div className="flex items-center gap-2 font-mono text-sm text-slate-900 bg-slate-50 px-2 py-1 rounded">
+                           {session.number}
+                           <button className="text-slate-400 hover:text-indigo-600 focus:outline-none" onClick={() => { navigator.clipboard.writeText(session.number); toast.success("Copied!"); }}>
+                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                           </button>
+                         </div>
+                       </div>
+                       
+                       <div className="text-right">
+                         {session.status === 'completed' ? (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SMS Code</span>
+                            <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">
+                              {session.code || 'Received'}
+                            </span>
+                          </div>
+                        ) : session.status === 'active' ? (
+                          <span className="flex items-center text-emerald-600 font-medium text-xs">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></span> Waiting...
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium text-xs capitalize">{session.status}</span>
+                        )}
+                       </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden md:block w-full overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-white border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Number</th>
+                      <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Service</th>
+                      <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Status</th>
+                      <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase text-right">Expires</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {activeSessions.map((session) => (
+                      <tr key={session.id} className="hover:bg-slate-50 transition-colors bg-white">
+                        <td className="px-6 py-4 font-mono text-sm text-slate-900">
+                          <div className="flex items-center gap-2">
+                            {session.number}
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-indigo-600" onClick={() => { navigator.clipboard.writeText(session.number); toast.success("Copied!"); }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-900">{session.service} ({session.country})</td>
+                        <td className="px-6 py-4 text-sm">
+                          {session.status === 'completed' ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SMS Code</span>
+                              <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded inline-block w-max">
+                                {session.code || 'Received'}
+                              </span>
+                            </div>
+                          ) : session.status === 'active' ? (
+                            <span className="flex items-center text-emerald-600 font-medium">
+                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Waiting...
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-medium capitalize">{session.status}</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-slate-500 font-mono">
+                          <div className="flex items-center justify-end gap-3">
+                            {session.status === 'active' ? (
+                              <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded">
+                                <Countdown expiresAt={session.expiresAt} />
+                              </span>
+                            ) : session.status === 'completed' ? (
+                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Done</span>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded capitalize">{session.status}</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

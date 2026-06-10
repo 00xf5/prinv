@@ -139,7 +139,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 relative">
           <div className="flex items-center gap-2 md:gap-4">
             <Sheet>
               <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden -ml-2" />}>
@@ -178,13 +178,18 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-
-            <div className="flex items-center gap-2 md:hidden">
-               <Link to="/">
-                  <VverifyLogo className="w-9 h-9" />
-               </Link>
-            </div>
           </div>
+
+          {/* Centered Mobile Logo */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden">
+            <Link to="/" className="flex items-center gap-2 group">
+               <div className="p-1 rounded-xl bg-white shadow-sm border border-slate-200 group-hover:shadow transition-all">
+                  <VverifyLogo className="w-8 h-8 md:w-9 md:h-9" />
+               </div>
+               <span className="font-bold text-lg tracking-tight text-slate-900 hidden sm:block">Vverify</span>
+            </Link>
+          </div>
+
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="text-slate-400 hidden sm:flex">
               <Search className="w-5 h-5" />
