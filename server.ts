@@ -280,21 +280,6 @@ app.post("/api/webhooks/monnify", async (req, res) => {
   }
 });
 
-// Cancel and Refund Session (Proxy only)
-app.post("/api/cancel-number", async (req, res) => {
-  try {
-    const { grizzlyId } = req.body;
-    if (!grizzlyId) return res.status(400).send("Missing grizzlyId");
-    
-    const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${grizzlyId}`;
-    await fetch(cancelUrl);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Cancel proxy error:", err);
-    res.status(500).send("Cancel error");
-  }
-});
-
 async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

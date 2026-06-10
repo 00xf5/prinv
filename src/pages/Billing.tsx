@@ -24,8 +24,6 @@ export function Billing() {
     }
   }, []);
 
-  const predefinedAmounts = ["1500", "5000", "15000", "30000", "50000"];
-
   const handleTopUp = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error("Please enter a valid amount");
@@ -117,22 +115,9 @@ export function Billing() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 bg-slate-50/50">
             <h2 className="font-bold text-slate-900">Add Funds</h2>
-            <p className="text-xs text-slate-500 font-medium mt-1">Top up your balance using Pagsmile, Crypto, or Card.</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">Top up your account balance securely.</p>
           </div>
           <div className="p-6 space-y-4">
-            <div className="grid grid-cols-5 gap-2">
-              {predefinedAmounts.map(preset => (
-                <Button
-                  key={preset}
-                  variant={amount === preset ? "default" : "outline"}
-                  className={`w-full font-bold shadow-sm ${amount === preset ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent' : 'border-slate-200 text-slate-700 hover:bg-slate-50'} px-0 text-xs sm:text-sm`}
-                  onClick={() => setAmount(preset)}
-                >
-                  {formatNGNDirectly(Number(preset))}
-                </Button>
-              ))}
-            </div>
-            
             <div className="relative pt-2">
               <Input
                 type="number"
@@ -145,7 +130,7 @@ export function Billing() {
           </div>
           <div className="p-6 bg-slate-50 border-t border-slate-100">
             <Button className="w-full h-12 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" onClick={handleTopUp} disabled={isProcessing || !amount}>
-              {isProcessing ? "Redirecting to Checkout..." : (
+              {isProcessing ? "Processing Payment..." : (
                 <>
                   Pay {formatNGNDirectly(parseFloat(amount) || 0)}
                   <ArrowRight className="ml-2 h-4 w-4" />

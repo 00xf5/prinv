@@ -4,7 +4,7 @@ import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { Button, buttonVariants } from "../../components/ui/button";
-import { Phone, LayoutDashboard, Inbox, LogOut, Wallet, Menu, Search, User, Hexagon } from "lucide-react";
+import { Phone, LayoutDashboard, Inbox, LogOut, Wallet, Menu, Search, User, Hexagon, History as HistoryIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../../components/ui/sheet";
 import { useGrizzlyPolling } from "../lib/useGrizzlyPolling";
 import { useExchangeRate } from "../lib/useExchangeRate";
@@ -93,7 +93,8 @@ export function Layout({ children }: { children: ReactNode }) {
   const navLinks = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/buy", icon: Phone, label: "Rent Number" },
-    { to: "/inbox", icon: Inbox, label: "SMS History" },
+    { to: "/inbox", icon: Inbox, label: "SMS Inbox" },
+    { to: "/history", icon: HistoryIcon, label: "Number History" },
     { to: "/billing", icon: Wallet, label: "Billing" },
   ];
 

@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/Dashboard";
+import { History } from "./pages/History";
 import { Home } from "./pages/Home";
 import { BuyNumber } from "./pages/BuyNumber";
 import { Inbox } from "./pages/Inbox";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/buy" element={<Layout><BuyNumber /></Layout>} />
           <Route path="/inbox" element={<Layout><Inbox /></Layout>} />
+          <Route path="/history" element={<Layout><History /></Layout>} />
           <Route path="/billing" element={<Layout><Billing /></Layout>} />
           
           {/* Admin Routes with distinct AdminLayout */}

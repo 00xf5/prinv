@@ -29,36 +29,6 @@ export function Dashboard() {
   const [balance, setBalance] = useState<number>(0);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
-  // We need a helper to safely refund a user locally
-  const cancelAndRefundLocal = async (session: any) => {
-    try {
-      if (session.status !== "active") return;
-      const cancelRes = await fetch("/api/cancel-number", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grizzlyId: session.grizzlyId })
-      });
-      if (!cancelRes.ok) throw new Error("Grizzly Cancel Failed");
-
-      // Transaction refund
-      await runTransaction(db, async (t) => {
-        const userRef = doc(db, "users", auth.currentUser!.uid);
-        const sessionRef = doc(db, "sessions", session.id);
-        const uDoc = await t.get(userRef);
-        const sDoc = await t.get(sessionRef);
-        
-        if (!sDoc.exists() || sDoc.data().status !== "active") return;
-
-        if (uDoc.exists()) {
-          t.update(userRef, { balance: (uDoc.data()?.balance || 0) + session.cost, updatedAt: new Date().getTime() });
-        }
-        t.update(sessionRef, { status: "refunded", updatedAt: new Date().getTime() });
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const checkStatusLocal = async (session: any) => {
     try {
       if (session.status !== "active") return;
@@ -123,14 +93,6 @@ export function Dashboard() {
     const unsubSessions = onSnapshot(q, (snapshot) => {
       const sessions: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setActiveSessions(sessions);
-      
-      // Lazy Auto-Cleanup: Refund active sessions that have expired
-      const now = Date.now();
-      sessions.forEach(session => {
-        if (session.status === 'active' && session.expiresAt && session.expiresAt < now) {
-          cancelAndRefundLocal(session);
-        }
-      });
     });
 
     // Poll active sessions on Grizzly every 5 seconds
