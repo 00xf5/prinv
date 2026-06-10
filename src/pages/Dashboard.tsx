@@ -37,9 +37,9 @@ function CancelControl({ session, onCancel, isCancelling }: { session: any, onCa
 
   if (session.status !== "active" || session.code) return null;
 
-  const threeMinsMs = 3 * 60 * 1000;
-  const isCancellable = elapsed >= threeMinsMs;
-  const remaining = Math.max(0, threeMinsMs - elapsed);
+  const cancelWaitMs = 6 * 60 * 1000;
+  const isCancellable = elapsed >= cancelWaitMs;
+  const remaining = Math.max(0, cancelWaitMs - elapsed);
 
   const m = Math.floor(remaining / 60000);
   const s = Math.floor((remaining % 60000) / 1000);

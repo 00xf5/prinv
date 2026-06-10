@@ -109,7 +109,7 @@ export function Layout({ children }: { children: ReactNode }) {
     }
   }, [isAuthPage, user]);
 
-  // Support swipe gesture to expand/collapse as well
+  // Disabled swipe gesture for now
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
@@ -200,10 +200,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div 
-      className={`h-screen w-full bg-slate-100 text-slate-900 flex font-sans overflow-hidden p-1 sm:p-2 relative ${isFullyClosed ? "gap-0" : "gap-1 sm:gap-2"}`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      className={`h-[100dvh] w-full bg-slate-100 text-slate-900 flex font-sans overflow-hidden p-1 sm:p-2 relative ${isFullyClosed ? "gap-0" : "gap-1 sm:gap-2"}`}
     >
       {/* Backdrop for Mobile Sidebar expanded overlay */}
       <AnimatePresence>
@@ -218,17 +215,17 @@ export function Layout({ children }: { children: ReactNode }) {
           />
         )}
       </AnimatePresence>
-
+ 
       {/* Floating Collapsible Workspace Sidebar */}
       <motion.aside 
         animate={{ 
-          width: isFullyClosed ? 0 : (isCollapsed ? (isMobile ? 54 : 64) : 220),
-          opacity: isFullyClosed ? 0 : 1
+          width: isMobile ? (isCollapsed ? 0 : 256) : (isFullyClosed ? 0 : (isCollapsed ? 64 : 220)),
+          opacity: isMobile ? (isCollapsed ? 0 : 1) : (isFullyClosed ? 0 : 1)
         }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={`flex flex-col h-full bg-white border border-slate-200/50 rounded-2xl sm:rounded-3xl shadow-[0_4px_30px_rgba(0,0,0,0.02)] shrink-0 z-50 ${
-          isMobile && !isCollapsed ? "absolute left-2 top-2 bottom-2 h-[calc(100vh-1rem)] shadow-2xl" : "relative"
-        } ${isFullyClosed ? "border-none p-0 overflow-hidden pointer-events-none" : "overflow-visible"}`}
+          isMobile && !isCollapsed ? "absolute left-1 top-1 bottom-1 h-[calc(100dvh-0.5rem)] shadow-2xl" : "relative"
+        } ${(isMobile && isCollapsed) || isFullyClosed ? "border-none p-0 overflow-hidden pointer-events-none" : "overflow-visible"}`}
       >
         {/* Floating Expand/Collapse Circular Toggle on the right border line */}
         {!isFullyClosed && (
