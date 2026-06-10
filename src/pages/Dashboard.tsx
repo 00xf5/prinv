@@ -24,10 +24,103 @@ function Countdown({ expiresAt }: { expiresAt: number }) {
   return <span>{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</span>;
 }
 
+function CancelControl({ session, onCancel, isCancelling }: { session: any, onCancel: (session: any) => void, isCancelling: boolean }) {
+  const [elapsed, setElapsed] = useState(Date.now() - session.createdAt);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed(Date.now() - session.createdAt);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [session.createdAt]);
+
+  if (session.status !== "active" || session.code) return null;
+
+  const threeMinsMs = 3 * 60 * 1000;
+  const isCancellable = elapsed >= threeMinsMs;
+  const remaining = Math.max(0, threeMinsMs - elapsed);
+
+  const m = Math.floor(remaining / 60000);
+  const s = Math.floor((remaining % 60000) / 1000);
+
+  if (!isCancellable) {
+    return (
+      <div className="text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-md px-2 py-1 inline-flex items-center">
+        Cancel in {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-7 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border-red-200 text-xs font-bold shadow-sm transition-all rounded-md"
+      onClick={() => onCancel(session)}
+      disabled={isCancelling}
+    >
+      {isCancelling ? "Cancelling..." : "Cancel & Refund"}
+    </Button>
+  );
+}
+
 export function Dashboard() {
   const { formatCentsToNGN } = useExchangeRate();
   const [balance, setBalance] = useState<number>(0);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [isCancelling, setIsCancelling] = useState<string | null>(null);
+
+  const handleCancelSession = async (session: any) => {
+    if (isCancelling === session.id) return;
+    setIsCancelling(session.id);
+    const toastId = toast.loading("Processing refund and cancelling number...");
+    try {
+      // 1. Call secure cancel endpoint
+      try {
+        await fetch("/api/cancel-number", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ grizzlyId: session.grizzlyId })
+        });
+      } catch (err) {
+        console.warn("API setStatus call failed, performing secure local database refund anyway:", err);
+      }
+
+      // 2. Database transaction to refund cost
+      await runTransaction(db, async (t) => {
+        const userRef = doc(db, "users", auth.currentUser!.uid);
+        const sessionRef = doc(db, "sessions", session.id);
+        
+        const uDoc = await t.get(userRef);
+        const sDoc = await t.get(sessionRef);
+
+        if (!sDoc.exists() || sDoc.data().status !== "active") {
+          throw new Error("Number is no longer active.");
+        }
+
+        if (uDoc.exists()) {
+          const currentBal = uDoc.data()?.balance || 0;
+          const cost = session.cost || 0;
+          t.update(userRef, { 
+            balance: currentBal + cost, 
+            updatedAt: new Date().getTime() 
+          });
+        }
+        
+        t.update(sessionRef, { 
+          status: "cancelled", 
+          updatedAt: new Date().getTime() 
+        });
+      });
+
+      toast.success("Number cancelled successfully and balance refunded!", { id: toastId });
+    } catch (error: any) {
+      console.error("Cancellation failed:", error);
+      toast.error(error.message || "Failed to cancel number.", { id: toastId });
+    } finally {
+      setIsCancelling(null);
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -146,6 +239,11 @@ export function Dashboard() {
                        </div>
                     </div>
                     
+                    {session.status === 'active' && (
+                      <div className="flex items-center justify-end border-b border-dashed border-slate-100 pb-2 mb-2">
+                        <CancelControl session={session} onCancel={handleCancelSession} isCancelling={isCancelling === session.id} />
+                      </div>
+                    )}
                     <div className="flex justify-between items-end">
                        <div>
                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Number</div>
@@ -218,7 +316,10 @@ export function Dashboard() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right text-sm text-slate-500 font-mono">
-                          <div className="flex items-center justify-end gap-3">
+                          <div className="flex items-center justify-end gap-3 font-sans">
+                            {session.status === 'active' && (
+                              <CancelControl session={session} onCancel={handleCancelSession} isCancelling={isCancelling === session.id} />
+                            )}
                             {session.status === 'active' ? (
                               <span className="text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded">
                                 <Countdown expiresAt={session.expiresAt} />

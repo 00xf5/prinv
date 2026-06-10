@@ -91,6 +91,22 @@ app.post("/api/buy-number", async (req, res) => {
   }
 });
 
+app.post("/api/cancel-number", async (req, res) => {
+  try {
+    const { grizzlyId } = req.body;
+    if (!grizzlyId) {
+      return res.status(400).send("grizzlyId is required");
+    }
+    const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${grizzlyId}`;
+    const apiRes = await fetch(cancelUrl);
+    const data = await apiRes.text();
+    res.json({ success: true, response: data });
+  } catch (error) {
+    console.error("Cancel error:", error);
+    res.status(500).send(error instanceof Error ? error.message : "Cancel error");
+  }
+});
+
 // Proxy Clearbit logo request to bypass iframe CSP/sandbox bounds
 app.get("/api/logo/:domain", async (req, res) => {
   try {

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { auth, db } from "../lib/firebase";
 import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, runTransaction } from "firebase/firestore";
+import { toast } from "sonner";
 
 interface GrizzlyActiveSession {
   id: string;
@@ -43,11 +44,15 @@ export function useGrizzlyPolling() {
           try {
             // Check expiry
             if (session.expiresAt && session.expiresAt < Date.now()) {
-              await fetch("/api/cancel-number", { 
-                method: "POST", 
-                headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ grizzlyId: session.grizzlyId }) 
-              });
+              try {
+                await fetch("/api/cancel-number", { 
+                  method: "POST", 
+                  headers: { "Content-Type": "application/json" }, 
+                  body: JSON.stringify({ grizzlyId: session.grizzlyId }) 
+                });
+              } catch (apiErr) {
+                console.error("Grizzly API cancel error on expiry, rolling back locally anyway:", apiErr);
+              }
               await runTransaction(db, async (t) => {
                 const userRef = doc(db, "users", auth.currentUser!.uid);
                 const sessionRef = doc(db, "sessions", session.id);
@@ -59,6 +64,7 @@ export function useGrizzlyPolling() {
                 }
                 t.update(sessionRef, { status: "refunded", updatedAt: new Date().getTime() });
               });
+              toast.info(`Number for ${session.service} expired without SMS. Cost refunded!`);
               return;
             }
 
@@ -124,6 +130,7 @@ export function useGrizzlyPolling() {
                   }
                   t.update(sessionRef, { status: "cancelled", updatedAt: new Date().getTime() });
                 });
+                toast.info(`Number for ${session.service} cancelled by platform. Cost refunded!`);
               } catch (e) {
                 console.error("Failed to cancel and refund locally", e);
               }
