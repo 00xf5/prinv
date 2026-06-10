@@ -98,12 +98,12 @@ export function AdminSettings() {
         const data = await res.json();
         const countryData = data[selectedCountryId];
         if (countryData) {
-          const sList = Object.keys(countryData).map(key => ({
+          const sList = Object.keys(serviceMeta).map(key => ({
             id: key,
             name: serviceMeta[key] || key.toUpperCase(),
-            cost: countryData[key].cost,
-            count: countryData[key].count
-          })).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
+            cost: countryData[key]?.cost || 0,
+            count: countryData[key]?.count || 0
+          })).sort((a, b) => b.count - a.count);
           setServices(sList);
           if (sList.length > 0) {
             setSelectedServiceId(sList[0].id);
@@ -264,7 +264,7 @@ export function AdminSettings() {
               <div className="flex items-center gap-2">
                 <Calculator className="w-6 h-6 text-indigo-400" />
                 <div>
-                  <h2 className="text-lg font-bold text-white">Live Rate & Margin Playground</h2>
+                  <h2 className="text-lg font-bold text-white">Live Rate</h2>
                   <p className="text-xs text-slate-400">Verifying costs and revenue structure in real time.</p>
                 </div>
               </div>
