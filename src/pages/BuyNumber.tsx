@@ -1007,6 +1007,14 @@ export function BuyNumber() {
   
   const [searchCountry, setSearchCountry] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [favorites, setFavorites] = useState<{country: Country, service: Service}[]>([]);
+
+  useEffect(() => {
+    try {
+      const favs = localStorage.getItem("grizzly-favorites");
+      if (favs) setFavorites(JSON.parse(favs));
+    } catch(e) {}
+  }, []);
   
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
@@ -1263,6 +1271,37 @@ export function BuyNumber() {
 
       <div className="grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
+          {favorites.length > 0 && (
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50/50 rounded-xl shadow-sm border border-indigo-100 p-6">
+              <h2 className="text-sm font-bold mb-4 flex items-center gap-2 text-indigo-900 uppercase tracking-wider">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Quick Rent Favorites
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {favorites.map((fav, i) => (
+                  <button
+                    key={`${fav.country.grizzlyId}-${fav.service.id}-${i}`}
+                    onClick={() => {
+                      setSelectedCountry(fav.country);
+                      setSelectedService(fav.service);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex flex-col gap-2 p-3 rounded-lg border border-indigo-200 bg-white text-left shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group"
+                  >
+                    <div className="flex justify-between items-start">
+                       <ServiceLogo code={fav.service.id} name={fav.service.name} className="h-8 w-8 text-sm" />
+                       <span className="text-base">{renderFlag(fav.country.iso, fav.country.name)}</span>
+                    </div>
+                    <div>
+                       <div className="text-sm font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{fav.service.name}</div>
+                       <div className="text-xs text-slate-500 truncate">{fav.country.name}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {showOtherCountries && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900">
@@ -1379,8 +1418,29 @@ export function BuyNumber() {
 
         <div className="lg:col-span-4">
           <div className="bg-white rounded-xl shadow-md border border-slate-200 sticky top-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Order Summary</h2>
+              {selectedCountry && selectedService && (
+                <button 
+                  onClick={() => {
+                    const exists = favorites.find(f => f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id);
+                    let newFavs = [...favorites];
+                    if (exists) {
+                      newFavs = newFavs.filter(f => !(f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id));
+                      toast.success("Removed from quick rent.");
+                    } else {
+                      newFavs.push({ country: selectedCountry, service: selectedService });
+                      toast.success("Saved to quick rent.");
+                    }
+                    setFavorites(newFavs);
+                    localStorage.setItem("grizzly-favorites", JSON.stringify(newFavs));
+                  }}
+                  className={`p-1 rounded-md transition-colors ${favorites.find(f => f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id) ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                  title="Toggle Favorite"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={favorites.find(f => f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </button>
+              )}
             </div>
             <div className="p-6 space-y-6">
               <div className="flex justify-between items-center pb-4 border-b border-dashed border-slate-200">

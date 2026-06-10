@@ -29,52 +29,6 @@ export function Dashboard() {
   const [balance, setBalance] = useState<number>(0);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
-  const checkStatusLocal = async (session: any) => {
-    try {
-      if (session.status !== "active") return;
-      const statusRes = await fetch(`/api/grizzly?action=getStatus&id=${session.grizzlyId}`);
-      const text = await statusRes.text();
-
-      const sessionRef = doc(db, "sessions", session.id);
-
-      if (text.startsWith("STATUS_OK")) {
-        const codeParts = text.split(":");
-        const rawCode = codeParts.length > 1 ? codeParts[1] : codeParts[0];
-
-        await updateDoc(sessionRef, {
-          status: "completed",
-          code: rawCode,
-          updatedAt: new Date().getTime()
-        });
-
-        await addDoc(collection(db, "messages"), {
-          userId: auth.currentUser!.uid,
-          sessionId: session.id,
-          number: session.number,
-          service: session.service,
-          text: rawCode,
-          sender: session.service,
-          receivedAt: new Date().getTime()
-        });
-      } else if (text === "STATUS_CANCEL") {
-        // Platform cancelled it. Process refund
-        await runTransaction(db, async (t) => {
-          const userRef = doc(db, "users", auth.currentUser!.uid);
-          const uDoc = await t.get(userRef);
-          const sDoc = await t.get(sessionRef);
-          if (!sDoc.exists() || sDoc.data().status !== "active") return;
-
-          if (uDoc.exists()) {
-             t.update(userRef, { balance: (uDoc.data()?.balance || 0) + session.cost, updatedAt: new Date().getTime() });
-          }
-          t.update(sessionRef, { status: "cancelled", updatedAt: new Date().getTime() });
-        });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   useEffect(() => {
     if (!auth.currentUser) return;
 
@@ -95,24 +49,9 @@ export function Dashboard() {
       setActiveSessions(sessions);
     });
 
-    // Poll active sessions on Grizzly every 5 seconds
-    let activeInterval: any;
-    // Don't setInterval in onSnapshot, just run it once and it uses state
-    activeInterval = setInterval(() => {
-       setActiveSessions(currSessions => {
-         currSessions.forEach(session => {
-            if (session.status === "active") {
-              checkStatusLocal(session);
-            }
-         });
-         return currSessions;
-       });
-    }, 5000);
-
     return () => {
       unsubUser();
       unsubSessions();
-      clearInterval(activeInterval);
     };
   }, []);
 
@@ -184,7 +123,7 @@ export function Dashboard() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
+            <div className="max-h-[400px] overflow-y-auto overflow-x-auto w-full">
             <table className="w-full text-left">
               <thead className="bg-white border-b border-slate-100">
                 <tr>
