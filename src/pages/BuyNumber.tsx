@@ -71,7 +71,38 @@ const serviceDomainMap: Record<string, string> = {
   ts: "tesco.com",
   df: "draftkings.com",
   yl: "yolla.co",
-  lh: "lufthansa.com"
+  lh: "lufthansa.com",
+  tt: "tiktok.com",
+  sh: "shein.com",
+  tm: "temu.com",
+  dl: "deliveroo.co.uk",
+  dz: "deezer.com",
+  of: "onlyfans.com",
+  ly: "lyft.com",
+  dd: "doordash.com",
+  ti: "tinder.com",
+  bm: "bumble.com",
+  hi: "hily.com",
+  gr: "grindr.com",
+  bd: "badoo.com",
+  mz: "muzmatch.com",
+  ch: "clubhouse.com",
+  oc: "okcupid.com",
+  pf: "payoneer.com",
+  mc: "match.com",
+  eh: "eharmony.com",
+  bg: "bigo.tv",
+  k: "kakao.com",
+  cb: "coinbase.com",
+  ba: "binance.com",
+  ae: "aliexpress.com",
+  nk: "nike.com",
+  wc: "wechat.com",
+  ro: "roblox.com",
+  pr: "patreon.com",
+  yh: "yahoo.com",
+  eb: "ebay.com",
+  rv: "revolut.com"
 };
 
 const getServiceLogoUrl = (code: string, name: string): string | null => {
@@ -85,29 +116,30 @@ const getServiceLogoUrl = (code: string, name: string): string | null => {
     return getProxyUrl(serviceDomainMap[normCode]);
   }
 
-  // 2. Guess domain based on name regex/match
+  // 2. Guess domain based on name regex/match with extremely rich coverage
   if (normName.includes("whatsapp")) return getProxyUrl("whatsapp.com");
   if (normName.includes("telegram")) return getProxyUrl("telegram.org");
   if (normName.includes("instagram")) return getProxyUrl("instagram.com");
   if (normName.includes("facebook")) return getProxyUrl("facebook.com");
-  if (normName.includes("twitter") || normName.includes(" x ")) return getProxyUrl("twitter.com");
-  if (normName.includes("google") || normName.includes("gmail") || normName.includes("youtube")) return getProxyUrl("google.com");
+  if (normName.includes("twitter") || normName.includes(" x ") || normName === "x") return getProxyUrl("twitter.com");
+  if (normName.includes("google") || normName.includes("gmail") || normName.includes("youtube") || normName.includes("g-mail") || normName.includes("g mail")) return getProxyUrl("google.com");
   if (normName.includes("yandex")) return getProxyUrl("yandex.com");
   if (normName.includes("netflix")) return getProxyUrl("netflix.com");
-  if (normName.includes("amazon")) return getProxyUrl("amazon.com");
-  if (normName.includes("microsoft")) return getProxyUrl("microsoft.com");
+  if (normName.includes("amazon") || normName.includes("prime")) return getProxyUrl("amazon.com");
+  if (normName.includes("microsoft") || normName.includes("outlook") || normName.includes("hotmail")) return getProxyUrl("microsoft.com");
   if (normName.includes("discord")) return getProxyUrl("discord.com");
-  if (normName.includes("openai") || normName.includes("chatgpt") || normName.includes("claude") || normName.includes("anthropic")) return getProxyUrl("openai.com");
+  if (normName.includes("openai") || normName.includes("chatgpt") || normName.includes("claude") || normName.includes("anthropic") || normName.includes("gemini") || normName.includes("copilot")) return getProxyUrl("openai.com");
   if (normName.includes("uber")) return getProxyUrl("uber.com");
+  if (normName.includes("bolt")) return getProxyUrl("bolt.eu");
   if (normName.includes("spotify")) return getProxyUrl("spotify.com");
   if (normName.includes("tind") || normName.includes("tinder")) return getProxyUrl("tinder.com");
   if (normName.includes("steam")) return getProxyUrl("steampowered.com");
   if (normName.includes("zoom")) return getProxyUrl("zoom.us");
   if (normName.includes("viber")) return getProxyUrl("viber.com");
   if (normName.includes("wechat")) return getProxyUrl("wechat.com");
-  if (normName.includes("apple")) return getProxyUrl("apple.com");
+  if (normName.includes("apple") || normName.includes("icloud") || normName.includes("itunes")) return getProxyUrl("apple.com");
   if (normName.includes("tiktok")) return getProxyUrl("tiktok.com");
-  if (normName.includes("vkontakte") || normName.includes(" vk ")) return getProxyUrl("vk.com");
+  if (normName.includes("vkontakte") || normName.includes(" vk")) return getProxyUrl("vk.com");
   if (normName.includes("airbnb")) return getProxyUrl("airbnb.com");
   if (normName.includes("pinterest")) return getProxyUrl("pinterest.com");
   if (normName.includes("linkedin")) return getProxyUrl("linkedin.com");
@@ -123,10 +155,10 @@ const getServiceLogoUrl = (code: string, name: string): string | null => {
   if (normName.includes("revolut")) return getProxyUrl("revolut.com");
   if (normName.includes("binance")) return getProxyUrl("binance.com");
   if (normName.includes("coinbase")) return getProxyUrl("coinbase.com");
-  if (normName.includes("alibaba")) return getProxyUrl("alibaba.com");
-  if (normName.includes("aliexpress")) return getProxyUrl("aliexpress.com");
-  
-  // newly added mappings:
+  if (normName.includes("bybit")) return getProxyUrl("bybit.com");
+  if (normName.includes("okx")) return getProxyUrl("okx.com");
+  if (normName.includes("kucoin")) return getProxyUrl("kucoin.com");
+  if (normName.includes("alibaba") || normName.includes("aliexpress")) return getProxyUrl("alibaba.com");
   if (normName.includes("tencent") || normName.includes("qq")) return getProxyUrl("tencent.com");
   if (normName.includes("naver")) return getProxyUrl("naver.com");
   if (normName.includes("line")) return getProxyUrl("line.me");
@@ -138,120 +170,92 @@ const getServiceLogoUrl = (code: string, name: string): string | null => {
   if (normName.includes("dailymotion")) return getProxyUrl("dailymotion.com");
   if (normName.includes("soundcloud")) return getProxyUrl("soundcloud.com");
   if (normName.includes("mixcloud")) return getProxyUrl("mixcloud.com");
-  if (normName.includes("revolut")) return getProxyUrl("revolut.com");
-  if (normName.includes("n26")) return getProxyUrl("n26.com");
-  if (normName.includes("monzo")) return getProxyUrl("monzo.com");
-  if (normName.includes("wise")) return getProxyUrl("wise.com");
-  if (normName.includes("starling")) return getProxyUrl("starlingbank.com");
-  if (normName.includes("chime")) return getProxyUrl("chime.com");
-  if (normName.includes("kraken")) return getProxyUrl("kraken.com");
-  if (normName.includes("huobi")) return getProxyUrl("huobi.com");
-  if (normName.includes("okx")) return getProxyUrl("okx.com");
-  if (normName.includes("kucoin")) return getProxyUrl("kucoin.com");
-  if (normName.includes("crypto.com")) return getProxyUrl("crypto.com");
-  if (normName.includes("bitfinex")) return getProxyUrl("bitfinex.com");
-  if (normName.includes("bittrex")) return getProxyUrl("bittrex.com");
-  if (normName.includes("bumble")) return getProxyUrl("bumble.com");
-  if (normName.includes("badoo")) return getProxyUrl("badoo.com");
-  if (normName.includes("okcupid")) return getProxyUrl("okcupid.com");
-  if (normName.includes("hinge")) return getProxyUrl("hinge.co");
-  if (normName.includes("match")) return getProxyUrl("match.com");
+  if (normName.includes("shein")) return getProxyUrl("shein.com");
+  if (normName.includes("temu")) return getProxyUrl("temu.com");
   if (normName.includes("deliveroo")) return getProxyUrl("deliveroo.co.uk");
-  if (normName.includes("doordash")) return getProxyUrl("doordash.com");
-  if (normName.includes("wolt")) return getProxyUrl("wolt.com");
-  if (normName.includes("glovo")) return getProxyUrl("glovoapp.com");
-  if (normName.includes("talabat")) return getProxyUrl("talabat.com");
-  if (normName.includes("swiggy")) return getProxyUrl("swiggy.com");
-  if (normName.includes("zomato")) return getProxyUrl("zomato.com");
-  if (normName.includes("foodpanda")) return getProxyUrl("foodpanda.com");
-  if (normName.includes("just eat")) return getProxyUrl("just-eat.co.uk");
-  if (normName.includes("bolt")) return getProxyUrl("bolt.eu");
-  if (normName.includes("indrive")) return getProxyUrl("indrive.com");
-  if (normName.includes("didi")) return getProxyUrl("didiglobal.com");
-  if (normName.includes("ola")) return getProxyUrl("olacabs.com");
-  if (normName.includes("mercari")) return getProxyUrl("mercari.com");
-  if (normName.includes("depop")) return getProxyUrl("depop.com");
-  if (normName.includes("poshmark")) return getProxyUrl("poshmark.com");
-  if (normName.includes("vinted")) return getProxyUrl("vinted.com");
-  if (normName.includes("grailed")) return getProxyUrl("grailed.com");
-  if (normName.includes("shein")) return getProxyUrl("shein.com");
-  if (normName.includes("temu")) return getProxyUrl("temu.com");
-  if (normName.includes("onlyfans")) return getProxyUrl("onlyfans.com");
   if (normName.includes("deezer")) return getProxyUrl("deezer.com");
-  if (normName.includes("clubhouse")) return getProxyUrl("clubhouse.com");
-  if (normName.includes("kakaotalk") || normName.includes("kakao")) return getProxyUrl("kakaocorp.com");
-  if (normName.includes("bigo")) return getProxyUrl("bigo.tv");
-  if (normName.includes("grindr")) return getProxyUrl("grindr.com");
+  if (normName.includes("onlyfans")) return getProxyUrl("onlyfans.com");
   if (normName.includes("lyft")) return getProxyUrl("lyft.com");
-  if (normName.includes("temu")) return getProxyUrl("temu.com");
-  if (normName.includes("shein")) return getProxyUrl("shein.com");
+  if (normName.includes("doordash")) return getProxyUrl("doordash.com");
+  if (normName.includes("grindr")) return getProxyUrl("grindr.com");
+  if (normName.includes("monzo")) return getProxyUrl("monzo.com");
+  if (normName.includes("clubhouse")) return getProxyUrl("clubhouse.com");
+  if (normName.includes("bigo")) return getProxyUrl("bigo.tv");
+  if (normName.includes("kakao")) return getProxyUrl("kakao.com");
+  if (normName.includes("draftkings")) return getProxyUrl("draftkings.com");
+  if (normName.includes("yolla")) return getProxyUrl("yolla.co");
+  if (normName.includes("lufthansa")) return getProxyUrl("lufthansa.com");
+  if (normName.includes("deepseek")) return getProxyUrl("deepseek.com");
   if (normName.includes("nike")) return getProxyUrl("nike.com");
   if (normName.includes("adidas")) return getProxyUrl("adidas.com");
-
-  // Additional 50 mappings for common SMS verification services
-  if (normName.includes("github")) return getProxyUrl("github.com");
-  if (normName.includes("gitlab")) return getProxyUrl("gitlab.com");
-  if (normName.includes("samsung")) return getProxyUrl("samsung.com");
-  if (normName.includes("sony") || normName.includes("psn") || normName.includes("playstation")) return getProxyUrl("playstation.com");
-  if (normName.includes("nintendo")) return getProxyUrl("nintendo.com");
-  if (normName.includes("xbox")) return getProxyUrl("xbox.com");
-  if (normName.includes("epic games") || normName.includes("epicgames")) return getProxyUrl("epicgames.com");
-  if (normName.includes("ea ") || normName.includes("origin")) return getProxyUrl("ea.com");
-  if (normName.includes("ubisoft")) return getProxyUrl("ubisoft.com");
-  if (normName.includes("blizzard") || normName.includes("battle.net")) return getProxyUrl("blizzard.com");
-  if (normName.includes("riot")) return getProxyUrl("riotgames.com");
-  if (normName.includes("twitch")) return getProxyUrl("twitch.tv");
-  if (normName.includes("fiverr")) return getProxyUrl("fiverr.com");
-  if (normName.includes("upwork")) return getProxyUrl("upwork.com");
-  if (normName.includes("freelancer")) return getProxyUrl("freelancer.com");
+  if (normName.includes("puma")) return getProxyUrl("puma.com");
+  if (normName.includes("badoo")) return getProxyUrl("badoo.com");
+  if (normName.includes("hily")) return getProxyUrl("hily.com");
+  if (normName.includes("bumble")) return getProxyUrl("bumble.com");
+  if (normName.includes("hinge")) return getProxyUrl("hinge.co");
+  if (normName.includes("okcupid")) return getProxyUrl("okcupid.com");
+  if (normName.includes("payoneer")) return getProxyUrl("payoneer.com");
+  if (normName.includes("eharmony")) return getProxyUrl("eharmony.com");
+  
+  // Nigeria and popular localized payments & telecom guesser
+  if (normName.includes("palmpay")) return getProxyUrl("palmpay.com");
+  if (normName.includes("opay")) return getProxyUrl("opayweb.com");
+  if (normName.includes("mtn")) return getProxyUrl("mtn.com");
+  if (normName.includes("airtel")) return getProxyUrl("airtel.com");
+  if (normName.includes("glo") || normName.includes("gloworld")) return getProxyUrl("gloworld.com");
+  if (normName.includes("9mobile")) return getProxyUrl("9mobile.com.ng");
+  if (normName.includes("skype")) return getProxyUrl("skype.com");
+  if (normName.includes("chime")) return getProxyUrl("chime.com");
+  if (normName.includes("cash app") || normName.includes("cashapp")) return getProxyUrl("cash.app");
+  if (normName.includes("wise") || normName.includes("transferwise")) return getProxyUrl("wise.com");
+  if (normName.includes("skrill")) return getProxyUrl("skrill.com");
+  if (normName.includes("payeer")) return getProxyUrl("payeer.com");
+  if (normName.includes("perfect money") || normName.includes("perfectmoney")) return getProxyUrl("perfectmoney.com");
+  if (normName.includes("webmoney")) return getProxyUrl("webmoney.ru");
+  if (normName.includes("crunchyroll")) return getProxyUrl("crunchyroll.com");
+  if (normName.includes("duolingo")) return getProxyUrl("duolingo.com");
+  if (normName.includes("coursera")) return getProxyUrl("coursera.org");
+  if (normName.includes("udemy")) return getProxyUrl("udemy.com");
+  if (normName.includes("medium")) return getProxyUrl("medium.com");
+  if (normName.includes("quora")) return getProxyUrl("quora.com");
   if (normName.includes("canva")) return getProxyUrl("canva.com");
   if (normName.includes("figma")) return getProxyUrl("figma.com");
   if (normName.includes("notion")) return getProxyUrl("notion.so");
   if (normName.includes("slack")) return getProxyUrl("slack.com");
   if (normName.includes("trello")) return getProxyUrl("trello.com");
   if (normName.includes("asana")) return getProxyUrl("asana.com");
-  if (normName.includes("jira") || normName.includes("atlassian")) return getProxyUrl("atlassian.com");
-  if (normName.includes("salesforce")) return getProxyUrl("salesforce.com");
-  if (normName.includes("hubspot")) return getProxyUrl("hubspot.com");
-  if (normName.includes("mailchimp")) return getProxyUrl("mailchimp.com");
-  if (normName.includes("twilio")) return getProxyUrl("twilio.com");
-  if (normName.includes("sendgrid")) return getProxyUrl("sendgrid.com");
-  if (normName.includes("digitalocean")) return getProxyUrl("digitalocean.com");
-  if (normName.includes("aws") || normName.includes("amazon web")) return getProxyUrl("aws.amazon.com");
-  if (normName.includes("heroku")) return getProxyUrl("heroku.com");
-  if (normName.includes("vercel")) return getProxyUrl("vercel.com");
-  if (normName.includes("netlify")) return getProxyUrl("netlify.com");
-  if (normName.includes("cloudflare")) return getProxyUrl("cloudflare.com");
-  if (normName.includes("namecheap")) return getProxyUrl("namecheap.com");
-  if (normName.includes("godaddy")) return getProxyUrl("godaddy.com");
-  if (normName.includes("shopify")) return getProxyUrl("shopify.com");
-  if (normName.includes("etsy")) return getProxyUrl("etsy.com");
-  if (normName.includes("walmart")) return getProxyUrl("walmart.com");
-  if (normName.includes("target")) return getProxyUrl("target.com");
-  if (normName.includes("best buy") || normName.includes("bestbuy")) return getProxyUrl("bestbuy.com");
-  if (normName.includes("sephora")) return getProxyUrl("sephora.com");
-  if (normName.includes("zara")) return getProxyUrl("zara.com");
-  if (normName.includes("asos")) return getProxyUrl("asos.com");
-  if (normName.includes("g2a")) return getProxyUrl("g2a.com");
-  if (normName.includes("kinguin")) return getProxyUrl("kinguin.net");
-  if (normName.includes("cdkeys")) return getProxyUrl("cdkeys.com");
-  if (normName.includes("eneba")) return getProxyUrl("eneba.com");
-  if (normName.includes("gamivo")) return getProxyUrl("gamivo.com");
-  if (normName.includes("vk")) return getProxyUrl("vk.com");
-  if (normName.includes("ok.ru")) return getProxyUrl("ok.ru");
-  if (normName.includes("avito")) return getProxyUrl("avito.ru");
-  if (normName.includes("mail.ru")) return getProxyUrl("mail.ru");
-  if (normName.includes("wildberries")) return getProxyUrl("wildberries.ru");
-  if (normName.includes("ozon")) return getProxyUrl("ozon.ru");
+  if (normName.includes("monday")) return getProxyUrl("monday.com");
+  if (normName.includes("adobe")) return getProxyUrl("adobe.com");
+  if (normName.includes("proton")) return getProxyUrl("proton.me");
+  if (normName.includes("mailru") || normName.includes("mail.ru")) return getProxyUrl("mail.ru");
+  if (normName.includes("rambler")) return getProxyUrl("rambler.ru");
+  if (normName.includes("fastmail")) return getProxyUrl("fastmail.com");
+  if (normName.includes("zoho")) return getProxyUrl("zoho.com");
+  if (normName.includes("gmx")) return getProxyUrl("gmx.com");
+  if (normName.includes("aol")) return getProxyUrl("aol.com");
+  if (normName.includes("ticketmaster")) return getProxyUrl("ticketmaster.com");
+  if (normName.includes("stubhub")) return getProxyUrl("stubhub.com");
+  if (normName.includes("seatgeek")) return getProxyUrl("seatgeek.com");
+  if (normName.includes("viagogo")) return getProxyUrl("viagogo.com");
+  if (normName.includes("bet9ja")) return getProxyUrl("bet9ja.com");
+  if (normName.includes("1xbet")) return getProxyUrl("1xbet.com");
+  if (normName.includes("betway")) return getProxyUrl("betway.com");
+  if (normName.includes("bet365")) return getProxyUrl("bet365.com");
+  if (normName.includes("sportybet")) return getProxyUrl("sportybet.com");
+  if (normName.includes("nairabet")) return getProxyUrl("nairabet.com");
+  if (normName.includes("merrybet")) return getProxyUrl("merrybet.com");
+  if (normName.includes("betking")) return getProxyUrl("betking.com");
+  if (normName.includes("william hill") || normName.includes("williamhill")) return getProxyUrl("williamhill.com");
+  if (normName.includes("ladbrokes")) return getProxyUrl("ladbrokes.com");
+  if (normName.includes("bwin")) return getProxyUrl("bwin.com");
+  if (normName.includes("paddypower")) return getProxyUrl("paddypower.com");
+  if (normName.includes("skybet")) return getProxyUrl("skybet.com");
+  if (normName.includes("fanduel")) return getProxyUrl("fanduel.com");
 
-  // If the name is basically a domain
-  if (normName.includes(".") && !normName.includes(" ")) {
-     return getProxyUrl(normName);
-  }
-
-  // Fallback based on name if we can trim it to a clean word
-  const words = normName.split(" ");
-  if (words.length === 1 && words[0].length > 3) {
+  // Alphanumeric fallback guesser
+  const cleanLabel = normName.replace(/\([^)]*\)/g, "").replace(/[^a-z0-9\s]/g, " ").trim();
+  const words = cleanLabel.split(/\s+/).filter(w => w.length > 2 && w !== "and" && w !== "the" && w !== "for" && w !== "premium" && w !== "service");
+  if (words.length > 0) {
     return getProxyUrl(`${words[0]}.com`);
   }
 
