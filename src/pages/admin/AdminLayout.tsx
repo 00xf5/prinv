@@ -14,7 +14,7 @@ export function AdminLayout() {
     const unsub = auth.onAuthStateChanged(async (user) => {
       if (user) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists() && (userDoc.data()?.role === 'admin' || user.email === 'dwightsyeve49@gmail.com')) {
+        if (userDoc.exists() && (userDoc.data()?.role === 'admin' || user.email === 'dwightsyeve49@gmail.com' || user.email === 'tester419tester@gmail.com')) {
           // If they aren't marked as admin in DB but bypassed, update it
           if (userDoc.data()?.role !== 'admin') {
              try {

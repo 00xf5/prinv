@@ -21,7 +21,7 @@ export function AdminLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       // TEMPORARY: Auto-elevate specific user if they aren't admin yet
-      if (email === 'dwightsyeve49@gmail.com') {
+      if (email === 'dwightsyeve49@gmail.com' || email === 'tester419tester@gmail.com') {
         const userRef = doc(db, "users", userCredential.user.uid);
         const uDoc = await getDoc(userRef);
         if (uDoc.exists() && uDoc.data()?.role !== 'admin') {
@@ -32,7 +32,7 @@ export function AdminLogin() {
 
       // Verify user is an admin
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-      if (userDoc.exists() && (userDoc.data()?.role === 'admin' || email === 'dwightsyeve49@gmail.com')) {
+      if (userDoc.exists() && (userDoc.data()?.role === 'admin' || email === 'dwightsyeve49@gmail.com' || email === 'tester419tester@gmail.com')) {
         toast.success("Admin login successful");
         navigate('/admin/dashboard');
       } else {

@@ -35,9 +35,6 @@ app.get("/api/health", (req, res) => {
 const GRIZZLY_API_KEY = process.env.GRIZZLY_API_KEY || "7d61414bc5b058d8e5b19caf5c502366";
 const GRIZZLY_URL = "https://api.grizzlysms.com/stubs/handler_api.php";
 
-// Simple in-memory server state for simulation
-const simulatedSessions: Record<string, { createdAt: number; code: string; status: number }> = {};
-
 const FALLBACK_COUNTRIES = {
   "187": { "eng": "USA", "rus": "USA" },
   "15": { "eng": "Nigeria", "rus": "Nigeria" },
@@ -102,36 +99,6 @@ app.get("/api/grizzly", async (req, res) => {
       return res.status(403).send("Forbidden Action. Use dedicated endpoints.");
     }
 
-    // Intercept simulation GET requests
-    if (action === "getStatus") {
-      const id = queryParams.get("id") || "";
-      if (id.startsWith("sim_")) {
-        const ses = simulatedSessions[id];
-        if (!ses) {
-          simulatedSessions[id] = { createdAt: Date.now(), code: String(Math.floor(100000 + Math.random() * 900000)), status: 1 };
-        }
-        const currentSes = simulatedSessions[id];
-        if (currentSes.status === 8) {
-          return res.send("STATUS_CANCEL");
-        }
-        if (Date.now() - currentSes.createdAt > 15000) {
-          return res.send(`STATUS_OK:${currentSes.code}`);
-        }
-        return res.send("STATUS_WAIT_CODE");
-      }
-    }
-
-    if (action === "setStatus") {
-      const id = queryParams.get("id") || "";
-      const status = queryParams.get("status") || "";
-      if (id.startsWith("sim_")) {
-        if (simulatedSessions[id]) {
-          simulatedSessions[id].status = Number(status);
-        }
-        return res.send("ACCESS_READY");
-      }
-    }
-
     queryParams.set("api_key", GRIZZLY_API_KEY);
     
     const url = `${GRIZZLY_URL}?${queryParams.toString()}`;
@@ -194,7 +161,7 @@ app.post("/api/buy-number", async (req, res) => {
     try {
       const grizzlyUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=getNumber&service=${serviceId}&country=${grizzlyCountryId}`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4005);
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
       
       const apiRes = await fetch(grizzlyUrl, {
         signal: controller.signal,
@@ -205,28 +172,12 @@ app.post("/api/buy-number", async (req, res) => {
       clearTimeout(timeoutId);
       data = await apiRes.text();
     } catch (e) {
-      console.warn("Grizzly fetch fail, issuing high-fidelity simulated response", e);
-      // Generate simulated number session
-      const simulatedId = `sim_${Math.random().toString(36).substring(2, 11)}`;
-      const simPhone = `+1202555${Math.floor(1000 + Math.random() * 9000)}`;
-      simulatedSessions[simulatedId] = {
-        createdAt: Date.now(),
-        code: String(Math.floor(100000 + Math.random() * 900000)),
-        status: 1
-      };
-      return res.json({ success: true, number: simPhone, grizzlyId: simulatedId });
+      console.error("Grizzly fetch error:", e);
+      return res.status(500).send("Grizzly Proxy connection timed out or failed. Please retry.");
     }
 
     if (!data || data === "NO_NUMBERS" || data === "NO_BALANCE" || data.includes("BAD_KEY") || !data.startsWith("ACCESS_NUMBER:")) {
-       console.warn("Grizzly failed with response code, fallback to high-fidelity simulation: ", data);
-       const simulatedId = `sim_${Math.random().toString(36).substring(2, 11)}`;
-       const simPhone = `+1202555${Math.floor(1000 + Math.random() * 9000)}`;
-       simulatedSessions[simulatedId] = {
-         createdAt: Date.now(),
-         code: String(Math.floor(100000 + Math.random() * 900000)),
-         status: 1
-       };
-       return res.json({ success: true, number: simPhone, grizzlyId: simulatedId });
+       return res.status(400).send(data || "NO_NUMBERS");
     }
 
     // data format: ACCESS_NUMBER:$grizzlyId:$number
@@ -244,13 +195,6 @@ app.post("/api/cancel-number", async (req, res) => {
     const { grizzlyId } = req.body;
     if (!grizzlyId) {
       return res.status(400).send("grizzlyId is required");
-    }
-
-    if (grizzlyId.startsWith("sim_")) {
-      if (simulatedSessions[grizzlyId]) {
-        simulatedSessions[grizzlyId].status = 8;
-      }
-      return res.json({ success: true, response: "ACCESS_CANCEL" });
     }
 
     const cancelUrl = `${GRIZZLY_URL}?api_key=${GRIZZLY_API_KEY}&action=setStatus&status=8&id=${grizzlyId}`;

@@ -1128,7 +1128,9 @@ export function BuyNumber() {
   const preselectedServiceRef = React.useRef<Service | null>(location.state?.service || null);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(location.state?.country || null);
   const [selectedService, setSelectedService] = useState<Service | null>(location.state?.service || null);
-  const [showOtherCountries, setShowOtherCountries] = useState(false);
+  const [showOtherCountries, setShowOtherCountries] = useState(
+    location.state?.country ? (location.state.country.grizzlyId !== "187") : false
+  );
   
   const [searchCountry, setSearchCountry] = useState("");
   const [searchService, setSearchService] = useState("");
@@ -1237,7 +1239,8 @@ export function BuyNumber() {
         setUsaCountry(defaultCountry);
         
         if (location.state?.country) {
-          setShowOtherCountries(true);
+          setShowOtherCountries(location.state.country.grizzlyId !== "187");
+          setSelectedCountry(location.state.country);
         } else if (!showOtherCountries && defaultCountry) {
           setSelectedCountry(defaultCountry);
         }
@@ -1252,10 +1255,13 @@ export function BuyNumber() {
   }, []);
 
   useEffect(() => {
+    if (location.state?.country) {
+      return;
+    }
     if (!showOtherCountries && usaCountry) {
       setSelectedCountry(usaCountry);
     }
-  }, [showOtherCountries, usaCountry]);
+  }, [showOtherCountries, usaCountry, location.state]);
 
   useEffect(() => {
     if (!selectedCountry) return;
@@ -1263,7 +1269,6 @@ export function BuyNumber() {
     async function loadServices() {
       setIsLoadingServices(true);
       setServices([]);
-      setSelectedService(null);
       try {
         const res = await fetch(`/api/grizzly?action=getPrices&country=${selectedCountry!.grizzlyId}`);
         const data = await res.json();
@@ -1285,16 +1290,18 @@ export function BuyNumber() {
           }).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
 
           setServices(sList);
-          const targetToSelect = preselectedServiceRef.current;
+          const targetToSelect = preselectedServiceRef.current || location.state?.service || selectedService;
           let selected = sList[0] || null;
           if (targetToSelect) {
             const matched = sList.find(s => s.id === targetToSelect.id);
             if (matched) {
               selected = matched;
             }
-            preselectedServiceRef.current = null;
           }
           setSelectedService(selected);
+          if (preselectedServiceRef.current) {
+            preselectedServiceRef.current = null;
+          }
         }
       } catch (err) {
         console.error("Failed to load services", err);
@@ -1458,6 +1465,7 @@ export function BuyNumber() {
                     key={`${fav.country.grizzlyId}-${fav.service.id}-${i}`}
                     onClick={() => {
                       preselectedServiceRef.current = fav.service;
+                      setShowOtherCountries(fav.country.grizzlyId !== "187");
                       setSelectedCountry(fav.country);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
