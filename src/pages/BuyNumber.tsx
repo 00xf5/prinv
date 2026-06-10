@@ -798,7 +798,7 @@ const getInlineLogo = (code: string, name: string): InlineLogo | null => {
   return null;
 };
 
-const ServiceLogo = ({ code, name, className = "" }: { code: string, name: string, className?: string }) => {
+export const ServiceLogo = ({ code, name, className = "" }: { code: string, name: string, className?: string }) => {
   const [hasError, setHasError] = useState(false);
   
   // 1. Check if there is an premium high-fidelity inline logo we can use instantly!
@@ -1338,6 +1338,7 @@ export function BuyNumber() {
         grizzlyId: grizzlyId,
         number: number,
         service: selectedService.name,
+        serviceCode: selectedService.id,
         country: selectedCountry.name,
         cost: cost,
         status: "active",

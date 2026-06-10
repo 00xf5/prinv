@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, onSnapshot } from "firebase/firestor
 import { Phone, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useExchangeRate } from "../lib/useExchangeRate";
+import { ServiceLogo } from "./BuyNumber";
 
 export function History() {
   const { formatCentsToNGN } = useExchangeRate();
@@ -57,7 +58,15 @@ export function History() {
                 {sessions.map((session) => (
                   <tr key={session.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-mono text-sm text-slate-900">{session.number}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{session.service} ({session.country})</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                      <div className="flex items-center gap-3">
+                        <ServiceLogo code={session.serviceCode || ""} name={session.service || ""} className="h-8 w-8 text-[10px]" />
+                        <div>
+                          <p className="font-bold text-slate-900">{session.service}</p>
+                          <p className="text-xs text-slate-400 font-normal">{session.country}</p>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-sm font-mono text-slate-600">{formatCentsToNGN(session.cost)}</td>
                     <td className="px-6 py-4 text-sm">
                        {session.status === 'completed' ? (

@@ -7,6 +7,7 @@ import { Wallet, Phone, ArrowUpRight, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useExchangeRate } from "../lib/useExchangeRate";
+import { ServiceLogo } from "./BuyNumber";
 
 function Countdown({ expiresAt }: { expiresAt: number }) {
   const [timeLeft, setTimeLeft] = useState(Math.max(0, expiresAt - Date.now()));
@@ -222,9 +223,12 @@ export function Dashboard() {
                 {activeSessions.map((session) => (
                   <div key={session.id} className="p-4 flex flex-col gap-3 bg-white hover:bg-slate-50 transition-colors">
                     <div className="flex justify-between items-start">
-                       <div>
-                         <div className="text-sm font-bold text-slate-900">{session.service}</div>
-                         <div className="text-xs text-slate-500">{session.country}</div>
+                       <div className="flex items-center gap-3">
+                         <ServiceLogo code={session.serviceCode || ""} name={session.service || ""} className="h-9 w-9 text-xs" />
+                         <div>
+                           <div className="text-sm font-bold text-slate-900">{session.service}</div>
+                           <div className="text-xs text-slate-500">{session.country}</div>
+                         </div>
                        </div>
                        <div className="text-right">
                         {session.status === 'active' ? (
@@ -298,7 +302,15 @@ export function Dashboard() {
                             </Button>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-slate-900">{session.service} ({session.country})</td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                          <div className="flex items-center gap-3">
+                            <ServiceLogo code={session.serviceCode || ""} name={session.service || ""} className="h-8 w-8 text-[10px]" />
+                            <div>
+                              <div className="font-bold text-slate-900">{session.service}</div>
+                              <div className="text-xs text-slate-400 font-normal">{session.country}</div>
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 text-sm">
                           {session.status === 'completed' ? (
                             <div className="flex flex-col gap-1">

@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Inbox as InboxIcon, Filter, Copy, RefreshCcw } from "lucide-react";
 import { format } from "date-fns";
+import { ServiceLogo } from "./BuyNumber";
 import { db, auth } from "../lib/firebase";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { toast } from "sonner";
@@ -76,8 +77,11 @@ export function Inbox() {
             <div key={msg.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
               <div className="flex flex-col md:flex-row">
                 <div className="bg-slate-50 px-6 py-4 md:w-64 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col justify-center">
-                  <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 tracking-wider">
-                    {msg.service || "Any Service"}
+                  <div className="flex items-center gap-2 mb-2">
+                    <ServiceLogo code={msg.serviceCode || ""} name={msg.service || ""} className="h-5 w-5 text-[8px]" />
+                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                      {msg.service || "Any Service"}
+                    </span>
                   </div>
                   <div className="font-mono font-medium text-lg tracking-tight text-slate-900">
                     {msg.number || "Hidden"}

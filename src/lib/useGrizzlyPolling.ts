@@ -10,6 +10,7 @@ interface GrizzlyActiveSession {
   userId: string;
   number?: string;
   service?: string;
+  serviceCode?: string;
   cost?: number;
   expiresAt?: number;
 }
@@ -98,6 +99,7 @@ export function useGrizzlyPolling() {
                 text: code,
                 number: session.number || "",
                 service: session.service || "",
+                serviceCode: session.serviceCode || "",
                 sender: session.service || "Service",
                 receivedAt: new Date().getTime()
               });
