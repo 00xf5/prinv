@@ -16,11 +16,15 @@ export function NotificationsBell() {
     if (!auth.currentUser) return;
     const q = query(
       collection(db, "notifications"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("createdAt", "desc")
+      where("userId", "==", auth.currentUser.uid)
     );
     const unsub = onSnapshot(q, (snap) => {
       const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }) as any);
+      notifs.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toDate?.()?.getTime() || a.createdAt || 0;
+        const tB = b.createdAt?.toDate?.()?.getTime() || b.createdAt || 0;
+        return tB - tA;
+      });
       setNotifications(notifs);
       setUnreadCount(notifs.filter((n: any) => !n.read).length);
     });

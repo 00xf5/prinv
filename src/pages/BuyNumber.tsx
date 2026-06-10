@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "../lib/firebase";
-import { doc, runTransaction, collection, getDoc, setDoc } from "firebase/firestore";
+import { doc, runTransaction, collection, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { useExchangeRate } from "../lib/useExchangeRate";
 
 interface Country {
@@ -1138,6 +1138,7 @@ export function BuyNumber() {
   const [favorites, setFavorites] = useState<{country: Country, service: Service}[]>([]);
 
   useEffect(() => {
+    // 1. Initial quick load from local storage
     try {
       const favs = localStorage.getItem("grizzly-favorites");
       if (favs) {
@@ -1165,6 +1166,22 @@ export function BuyNumber() {
         localStorage.setItem("grizzly-favorites", JSON.stringify(defaultFavs));
       }
     } catch(e) {}
+
+    // 2. Sync from Firestore user document for true persistence
+    if (!auth.currentUser) return;
+    const unsub = onSnapshot(doc(db, "users", auth.currentUser.uid), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.favorites && Array.isArray(data.favorites)) {
+          setFavorites(data.favorites);
+          try {
+            localStorage.setItem("grizzly-favorites", JSON.stringify(data.favorites));
+          } catch(e) {}
+        }
+      }
+    });
+
+    return unsub;
   }, []);
   
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
@@ -1615,7 +1632,7 @@ export function BuyNumber() {
               <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">Order Summary</h2>
               {selectedCountry && selectedService && (
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     const exists = favorites.find(f => f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id);
                     let newFavs = [...favorites];
                     if (exists) {
@@ -1631,6 +1648,15 @@ export function BuyNumber() {
                     }
                     setFavorites(newFavs);
                     localStorage.setItem("grizzly-favorites", JSON.stringify(newFavs));
+                    if (auth.currentUser) {
+                      try {
+                        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                          favorites: newFavs
+                        });
+                      } catch (err) {
+                        console.error("Error backing up favorites to Firestore:", err);
+                      }
+                    }
                   }}
                   className={`p-1 rounded-md transition-colors ${favorites.find(f => f.country.grizzlyId === selectedCountry.grizzlyId && f.service.id === selectedService.id) ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
                   title="Toggle Favorite"

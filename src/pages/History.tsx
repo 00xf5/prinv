@@ -16,12 +16,17 @@ export function History() {
     
     const q = query(
       collection(db, "sessions"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("createdAt", "desc")
+      where("userId", "==", auth.currentUser.uid)
     );
     
     const unsub = onSnapshot(q, (snapshot) => {
-      setSessions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      list.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toDate?.()?.getTime() || a.createdAt || 0;
+        const tB = b.createdAt?.toDate?.()?.getTime() || b.createdAt || 0;
+        return tB - tA;
+      });
+      setSessions(list);
     });
     
     return () => unsub();

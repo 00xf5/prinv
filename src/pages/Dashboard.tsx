@@ -74,6 +74,7 @@ export function Dashboard() {
   const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
+    // 1. Initial quick load from local storage
     try {
       const favs = localStorage.getItem("grizzly-favorites");
       if (favs) {
@@ -101,6 +102,22 @@ export function Dashboard() {
         localStorage.setItem("grizzly-favorites", JSON.stringify(defaultFavs));
       }
     } catch(e) {}
+
+    // 2. Sync from Firestore user document for true persistence
+    if (!auth.currentUser) return;
+    const unsub = onSnapshot(doc(db, "users", auth.currentUser.uid), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.favorites && Array.isArray(data.favorites)) {
+          setFavorites(data.favorites);
+          try {
+            localStorage.setItem("grizzly-favorites", JSON.stringify(data.favorites));
+          } catch(e) {}
+        }
+      }
+    });
+
+    return unsub;
   }, []);
 
   const handleCancelSession = async (session: any) => {
@@ -163,16 +180,19 @@ export function Dashboard() {
       if (doc.exists()) setBalance(doc.data().balance || 0);
     });
 
-    // Sub to recent sessions (active + completed)
+    // Sub to recent sessions (active + completed) - sorted in-memory to prevent composite index errors
     const q = query(
       collection(db, "sessions"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("createdAt", "desc"),
-      limit(5)
+      where("userId", "==", auth.currentUser.uid)
     );
     const unsubSessions = onSnapshot(q, (snapshot) => {
       const sessions: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setActiveSessions(sessions);
+      sessions.sort((a, b) => {
+        const tA = a.createdAt?.toDate?.()?.getTime() || a.createdAt || 0;
+        const tB = b.createdAt?.toDate?.()?.getTime() || b.createdAt || 0;
+        return tB - tA;
+      });
+      setActiveSessions(sessions.slice(0, 5));
     });
 
     return () => {

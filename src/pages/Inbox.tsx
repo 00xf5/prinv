@@ -28,18 +28,28 @@ export function Inbox() {
     
     const unsubSms = onSnapshot(query(
       collection(db, "messages"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("receivedAt", "desc")
+      where("userId", "==", auth.currentUser.uid)
     ), (snapshot) => {
-      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      list.sort((a: any, b: any) => {
+        const tA = a.receivedAt?.toDate?.()?.getTime() || a.receivedAt || 0;
+        const tB = b.receivedAt?.toDate?.()?.getTime() || b.receivedAt || 0;
+        return tB - tA;
+      });
+      setMessages(list);
     });
 
     const unsubNotifs = onSnapshot(query(
       collection(db, "notifications"),
-      where("userId", "==", auth.currentUser.uid),
-      orderBy("createdAt", "desc")
+      where("userId", "==", auth.currentUser.uid)
     ), (snap) => {
-      setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => {
+        const tA = a.createdAt?.toDate?.()?.getTime() || a.createdAt || 0;
+        const tB = b.createdAt?.toDate?.()?.getTime() || b.createdAt || 0;
+        return tB - tA;
+      });
+      setNotifications(list);
     });
 
     // In-memory sort to prevent composite index errors in Firestore
