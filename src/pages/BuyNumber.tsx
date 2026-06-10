@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, MessageSquare, CreditCard, Shield, Loader2 } from "lucide-react";
+import { Search, MapPin, MessageSquare, CreditCard, Shield, Loader2, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1103,7 +1103,7 @@ const getCountryIso = (countryName: string): string => {
   return iso ? iso.toLowerCase() : "";
 };
 
-const renderFlag = (iso: string, name: string) => {
+export const renderFlag = (iso: string, name: string) => {
   if (iso) {
     return (
       <span
@@ -1124,18 +1124,44 @@ export function BuyNumber() {
   const [services, setServices] = useState<Service[]>([]);
   const [serviceMeta, setServiceMeta] = useState<ServiceMeta>({});
   
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const location = useLocation();
+  const preselectedServiceRef = React.useRef<Service | null>(location.state?.service || null);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(location.state?.country || null);
+  const [selectedService, setSelectedService] = useState<Service | null>(location.state?.service || null);
   const [showOtherCountries, setShowOtherCountries] = useState(false);
   
   const [searchCountry, setSearchCountry] = useState("");
   const [searchService, setSearchService] = useState("");
+  const [serviceSortMode, setServiceSortMode] = useState<'default' | 'alphabetical' | 'popular'>('default');
   const [favorites, setFavorites] = useState<{country: Country, service: Service}[]>([]);
 
   useEffect(() => {
     try {
       const favs = localStorage.getItem("grizzly-favorites");
-      if (favs) setFavorites(JSON.parse(favs));
+      if (favs) {
+        setFavorites(JSON.parse(favs));
+      } else {
+        const defaultFavs = [
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "wa", name: "WhatsApp", icon: "wa", grizzlyCost: 0.1, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "fb", name: "Facebook", icon: "fb", grizzlyCost: 0.1, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "ot", name: "Claude", icon: "ot", grizzlyCost: 0.2, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "op", name: "ChatGPT", icon: "op", grizzlyCost: 0.15, count: 100 }
+          }
+        ];
+        setFavorites(defaultFavs);
+        localStorage.setItem("grizzly-favorites", JSON.stringify(defaultFavs));
+      }
     } catch(e) {}
   }, []);
   
@@ -1210,7 +1236,9 @@ export function BuyNumber() {
         const defaultCountry = usa || (cList.length > 0 ? cList[0] : null);
         setUsaCountry(defaultCountry);
         
-        if (!showOtherCountries && defaultCountry) {
+        if (location.state?.country) {
+          setShowOtherCountries(true);
+        } else if (!showOtherCountries && defaultCountry) {
           setSelectedCountry(defaultCountry);
         }
       } catch (err) {
@@ -1257,7 +1285,16 @@ export function BuyNumber() {
           }).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
 
           setServices(sList);
-          if (sList.length > 0) setSelectedService(sList[0]);
+          const targetToSelect = preselectedServiceRef.current;
+          let selected = sList[0] || null;
+          if (targetToSelect) {
+            const matched = sList.find(s => s.id === targetToSelect.id);
+            if (matched) {
+              selected = matched;
+            }
+            preselectedServiceRef.current = null;
+          }
+          setSelectedService(selected);
         }
       } catch (err) {
         console.error("Failed to load services", err);
@@ -1366,7 +1403,16 @@ export function BuyNumber() {
   };
 
   const filteredCountries = React.useMemo(() => countries.filter(c => c.name.toLowerCase().includes(searchCountry.toLowerCase())), [countries, searchCountry]);
-  const filteredServices = React.useMemo(() => services.filter(s => s.name.toLowerCase().includes(searchService.toLowerCase())), [services, searchService]);
+  
+  const filteredServices = React.useMemo(() => {
+    let list = services.filter(s => s.name.toLowerCase().includes(searchService.toLowerCase()));
+    if (serviceSortMode === 'alphabetical') {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (serviceSortMode === 'popular') {
+      list = [...list].sort((a, b) => b.count - a.count);
+    }
+    return list;
+  }, [services, searchService, serviceSortMode]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -1411,8 +1457,8 @@ export function BuyNumber() {
                   <button
                     key={`${fav.country.grizzlyId}-${fav.service.id}-${i}`}
                     onClick={() => {
+                      preselectedServiceRef.current = fav.service;
                       setSelectedCountry(fav.country);
-                      setSelectedService(fav.service);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="relative flex items-center justify-center w-12 h-12 rounded-full border border-indigo-100 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white hover:scale-105 hover:shadow hover:border-indigo-200 transition-all group shrink-0"
@@ -1481,9 +1527,22 @@ export function BuyNumber() {
           )}
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900">
-              <MessageSquare className="h-5 w-5 text-indigo-600" /> {!showOtherCountries ? "1" : "2"}. Select Service {selectedCountry ? <span className="inline-flex items-center gap-1.5 font-bold">({renderFlag(selectedCountry.iso, selectedCountry.name)} {selectedCountry.name})</span> : ""}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900">
+                <MessageSquare className="h-5 w-5 text-indigo-600" /> {!showOtherCountries ? "1" : "2"}. Select Service {selectedCountry ? <span className="inline-flex items-center gap-1.5 font-bold">({renderFlag(selectedCountry.iso, selectedCountry.name)} {selectedCountry.name})</span> : ""}
+              </h2>
+              <button 
+                onClick={() => {
+                  if (serviceSortMode === 'default') setServiceSortMode('alphabetical');
+                  else if (serviceSortMode === 'alphabetical') setServiceSortMode('popular');
+                  else setServiceSortMode('default');
+                }}
+                className="flex items-center justify-center p-2 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                title={`Sort: ${serviceSortMode}`}
+              >
+                <ArrowUpDown className="h-4 w-4" />
+              </button>
+            </div>
             <div className="relative mb-4">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input

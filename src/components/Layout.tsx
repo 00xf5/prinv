@@ -6,6 +6,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { Phone, LayoutDashboard, Inbox, LogOut, Wallet, Menu, Search, User, Hexagon, History as HistoryIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../../components/ui/sheet";
+import { NotificationsBell } from "./NotificationsBell";
 import { useGrizzlyPolling } from "../lib/useGrizzlyPolling";
 import { useExchangeRate } from "../lib/useExchangeRate";
 
@@ -195,6 +196,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Search className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2 ml-2">
+              <NotificationsBell />
               <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 hover:text-slate-900 border border-slate-200 shadow-sm h-8 hidden sm:flex">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout

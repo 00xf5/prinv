@@ -17,6 +17,7 @@ import { AdminLayout } from "./pages/admin/AdminLayout";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminSettings } from "./pages/admin/AdminSettings";
+import { AdminSendInbox } from "./pages/admin/AdminSendInbox";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
              <Route path="dashboard" element={<AdminDashboard />} />
              <Route path="users" element={<AdminUsers />} />
              <Route path="settings" element={<AdminSettings />} />
+             <Route path="sendinbox" element={<AdminSendInbox />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

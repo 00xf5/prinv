@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { auth, db } from "../lib/firebase";
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy, limit, runTransaction, updateDoc, addDoc } from "firebase/firestore";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Wallet, Phone, ArrowUpRight, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useExchangeRate } from "../lib/useExchangeRate";
-import { ServiceLogo } from "./BuyNumber";
+import { ServiceLogo, renderFlag } from "./BuyNumber";
 
 function Countdown({ expiresAt }: { expiresAt: number }) {
   const [timeLeft, setTimeLeft] = useState(Math.max(0, expiresAt - Date.now()));
@@ -66,10 +66,42 @@ function CancelControl({ session, onCancel, isCancelling }: { session: any, onCa
 }
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { formatCentsToNGN } = useExchangeRate();
   const [balance, setBalance] = useState<number>(0);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const favs = localStorage.getItem("grizzly-favorites");
+      if (favs) {
+        setFavorites(JSON.parse(favs));
+      } else {
+        const defaultFavs = [
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "wa", name: "WhatsApp", icon: "wa", grizzlyCost: 0.1, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "fb", name: "Facebook", icon: "fb", grizzlyCost: 0.1, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "ot", name: "Claude", icon: "ot", grizzlyCost: 0.2, count: 100 }
+          },
+          {
+            country: { grizzlyId: "187", name: "USA", iso: "us" },
+            service: { id: "op", name: "ChatGPT", icon: "op", grizzlyCost: 0.15, count: 100 }
+          }
+        ];
+        setFavorites(defaultFavs);
+        localStorage.setItem("grizzly-favorites", JSON.stringify(defaultFavs));
+      }
+    } catch(e) {}
+  }, []);
 
   const handleCancelSession = async (session: any) => {
     if (isCancelling === session.id) return;
@@ -193,6 +225,37 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+      
+      {favorites.length > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50/50 rounded-xl shadow-sm border border-indigo-100 p-4 sm:p-5 mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold flex items-center gap-1.5 text-indigo-900 uppercase tracking-wider">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Quick Rent Favorites
+            </h2>
+            <Link to="/buy" className="text-[10px] font-bold text-indigo-600 bg-indigo-500/10 px-2 py-0.5 rounded-full hover:bg-indigo-500/20 transition-colors">
+              Manage / Add More
+            </Link>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {favorites.map((fav, i) => (
+              <button
+                key={`${fav.country.grizzlyId}-${fav.service.id}-${i}`}
+                onClick={() => {
+                  navigate("/buy", { state: { country: fav.country, service: fav.service } });
+                }}
+                className="relative flex items-center justify-center w-12 h-12 rounded-full border border-indigo-100 bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white hover:scale-105 hover:shadow hover:border-indigo-200 transition-all group shrink-0"
+                title={`${fav.service.name} in ${fav.country.name}`}
+              >
+                <ServiceLogo code={fav.service.id} name={fav.service.name} className="h-7 w-7 text-[8px]" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-xs border border-slate-100 text-[10px] leading-none overflow-hidden">
+                  {renderFlag(fav.country.iso, fav.country.name)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-4">

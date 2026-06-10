@@ -58,6 +58,42 @@
         "createdAt": { "type": "number" }
       },
       "required": ["id", "userId", "amount", "type", "description", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System alerts or user-specific notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "canReply": { "type": "boolean" },
+        "createdAt": { "type": "object" },
+        "replies": { "type": "array" },
+        "hasNewUserReply": { "type": "boolean" }
+      },
+      "required": ["userId", "title", "message", "read"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Customer support ticket",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" },
+        "replies": { "type": "array" },
+        "hasNewUserReply": { "type": "boolean" },
+        "hasNewAdminReply": { "type": "boolean" }
+      },
+      "required": ["userId", "title", "category", "description", "status"]
     }
   },
   "firestore": {
@@ -76,6 +112,14 @@
     "/transactions/{transactionId}": {
       "schema": { "$ref": "Transaction" },
       "description": "Ledger of transactions"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "Notification" },
+      "description": "System alerts or user-specific notifications"
+    },
+    "/tickets/{ticketId}": {
+      "schema": { "$ref": "Ticket" },
+      "description": "Customer support tickets"
     }
   }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Settings, LogOut, Activity, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, Activity, Shield, MessageSquare } from 'lucide-react';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ export function AdminLayout() {
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Send Inbox', path: '/admin/sendinbox', icon: MessageSquare },
   ];
 
   return (
