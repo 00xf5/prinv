@@ -103,7 +103,7 @@ app.get("/api/logo/:domain", async (req, res) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-    const response = await fetch(`https://logo.clearbit.com/${domain}`, {
+    const response = await fetch(`https://s2.googleusercontent.com/s2/favicons?domain=${domain}&sz=128`, {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
