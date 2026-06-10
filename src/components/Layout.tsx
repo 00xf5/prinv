@@ -229,20 +229,6 @@ export function Layout({ children }: { children: ReactNode }) {
         className={`flex flex-col h-full bg-white border border-slate-200/50 rounded-2xl sm:rounded-3xl shadow-[0_4px_30px_rgba(0,0,0,0.02)] shrink-0 z-50 ${
           isMobile && !isCollapsed ? "absolute left-2 top-2 bottom-2 h-[calc(100vh-1rem)] shadow-2xl" : "relative"
         } ${isFullyClosed ? "border-none p-0 overflow-hidden pointer-events-none" : "overflow-visible"}`}
-        drag={isMobile ? "x" : false}
-        dragConstraints={{ left: isCollapsed ? 0 : -256, right: isCollapsed ? 256 : 0 }}
-        dragElastic={{ left: 0.05, right: 0.15 }}
-        onDragEnd={(e, info) => {
-          if (isCollapsed) {
-            if (info.offset.x > 50 || info.velocity.x > 200) {
-              setIsCollapsed(false);
-            }
-          } else {
-            if (info.offset.x < -50 || info.velocity.x < -200) {
-              setIsCollapsed(true);
-            }
-          }
-        }}
       >
         {/* Floating Expand/Collapse Circular Toggle on the right border line */}
         {!isFullyClosed && (
