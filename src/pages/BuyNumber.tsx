@@ -1272,12 +1272,12 @@ export function BuyNumber() {
       <div className="grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
           {favorites.length > 0 && (
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50/50 rounded-xl shadow-sm border border-indigo-100 p-6">
-              <h2 className="text-sm font-bold mb-4 flex items-center gap-2 text-indigo-900 uppercase tracking-wider">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50/50 rounded-xl shadow-sm border border-indigo-100 p-4 sm:p-5">
+              <h2 className="text-xs font-bold mb-3 flex items-center gap-1.5 text-indigo-900 uppercase tracking-wider">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 Quick Rent Favorites
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 sm:grid-cols-3 gap-2.5">
                 {favorites.map((fav, i) => (
                   <button
                     key={`${fav.country.grizzlyId}-${fav.service.id}-${i}`}
@@ -1286,15 +1286,15 @@ export function BuyNumber() {
                       setSelectedService(fav.service);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="flex flex-col gap-2 p-3 rounded-lg border border-indigo-200 bg-white text-left shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group"
+                    className="flex items-center gap-2.5 p-2 rounded-lg border border-indigo-100/50 bg-white/80 backdrop-blur-sm text-left shadow-sm hover:bg-white hover:shadow hover:border-indigo-200 transition-all group min-w-0"
                   >
-                    <div className="flex justify-between items-start">
-                       <ServiceLogo code={fav.service.id} name={fav.service.name} className="h-8 w-8 text-sm" />
-                       <span className="text-base">{renderFlag(fav.country.iso, fav.country.name)}</span>
-                    </div>
-                    <div>
-                       <div className="text-sm font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{fav.service.name}</div>
-                       <div className="text-xs text-slate-500 truncate">{fav.country.name}</div>
+                    <ServiceLogo code={fav.service.id} name={fav.service.name} className="h-6 w-6 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                       <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{fav.service.name}</div>
+                       <div className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                          <span className="text-[10px] leading-none mb-[1px]">{renderFlag(fav.country.iso, fav.country.name)}</span>
+                          {fav.country.name}
+                       </div>
                     </div>
                   </button>
                 ))}
