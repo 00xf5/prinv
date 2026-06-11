@@ -1693,13 +1693,6 @@ export function BuyNumber() {
                   <div className="text-sm font-bold uppercase text-slate-500">Total</div>
                   <div className="text-3xl font-bold tracking-tight text-slate-900">{formatCentsToNGN(currentPrice)}</div>
                 </div>
-                {selectedService && (
-                  <div className="flex justify-end mt-1">
-                    <span className="text-xs font-semibold text-slate-400 bg-slate-100 rounded px-2 py-0.5 border border-slate-200">
-                      Raw Grizzly Cost: ${Number(selectedService.grizzlyCost).toFixed(3)}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex flex-col gap-3 bg-slate-50/80 p-6 border-t border-slate-100">
