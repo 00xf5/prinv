@@ -249,7 +249,7 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
 
         {/* Brand Logo Header area */}
-        <div className={`border-b border-slate-50 flex items-center ${isCollapsed ? "p-3 justify-center" : "p-4 px-5 justify-between"}`}>
+        <div className={`border-b border-slate-50 flex items-center ${isCollapsed ? "py-5 px-1.5 justify-center" : "p-4 px-5 justify-between"}`}>
           {!isCollapsed ? (
             <Link to="/" className="flex items-center gap-3">
               <VverifyLogo className="w-9 h-9 shrink-0" />
@@ -259,8 +259,10 @@ export function Layout({ children }: { children: ReactNode }) {
               </div>
             </Link>
           ) : (
-            <Link to="/">
-              <VverifyLogo className="w-8 h-8" />
+            <Link to="/" className="flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center shadow-xs hover:border-indigo-200 hover:bg-indigo-55/20 hover:scale-105 active:scale-95 transition-all duration-200">
+                <VverifyLogo className="w-7 h-7" />
+              </div>
             </Link>
           )}
         </div>
@@ -279,7 +281,7 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
 
         {/* Sidebar Navigation Items */}
-        <nav className={`flex-1 ${isCollapsed ? "px-1.5 py-4 overflow-visible" : "px-3 py-3 overflow-y-auto"} space-y-1`}>
+        <nav className={`flex-1 ${isCollapsed ? "px-1.5 pt-8 pb-4 overflow-visible" : "px-3 py-3 overflow-y-auto"} ${isCollapsed ? "space-y-2.5" : "space-y-1"}`}>
           {!isCollapsed && (
             <div className="px-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 mt-1 select-none">
               Services
