@@ -249,7 +249,7 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
 
         {/* Brand Logo Header area */}
-        <div className={`p-4 border-b border-slate-50 flex items-center ${isCollapsed ? "justify-center" : "px-5 justify-between"}`}>
+        <div className={`border-b border-slate-50 flex items-center ${isCollapsed ? "p-3 justify-center" : "p-4 px-5 justify-between"}`}>
           {!isCollapsed ? (
             <Link to="/" className="flex items-center gap-3">
               <VverifyLogo className="w-9 h-9 shrink-0" />
@@ -279,7 +279,7 @@ export function Layout({ children }: { children: ReactNode }) {
         )}
 
         {/* Sidebar Navigation Items */}
-        <nav className={`flex-1 px-3 ${isCollapsed ? "py-4" : "py-3"} space-y-1 overflow-y-auto`}>
+        <nav className={`flex-1 ${isCollapsed ? "px-1.5 py-4 overflow-visible" : "px-3 py-3 overflow-y-auto"} space-y-1`}>
           {!isCollapsed && (
             <div className="px-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3 mt-1 select-none">
               Services
@@ -292,13 +292,13 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`flex items-center px-3 py-2.5 text-xs font-semibold rounded-xl relative group transition-all duration-150 ${
+                className={`flex items-center text-xs font-semibold rounded-xl relative group transition-all duration-150 ${
                   isActive
                     ? "bg-slate-900 text-white shadow-md font-bold"
                     : "text-slate-600 hover:bg-slate-100/60 hover:text-slate-900 font-medium"
-                } ${isCollapsed ? "justify-center" : "justify-between"}`}
+                } ${isCollapsed ? "w-10 h-10 justify-center mx-auto" : "px-3 py-2.5 justify-between"}`}
               >
-                <div className="flex items-center min-w-0">
+                <div className={`flex items-center ${isCollapsed ? "justify-center" : "min-w-0"}`}>
                   <link.icon className={`h-[18px] w-[18px] shrink-0 ${isCollapsed ? "m-0 rotate-0" : "mr-3"} ${isActive && !isCollapsed ? "text-indigo-300" : ""}`} />
                   {!isCollapsed && (
                     <span className="truncate pr-2 group-hover:text-slate-950 transition-colors">
@@ -363,11 +363,11 @@ export function Layout({ children }: { children: ReactNode }) {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 items-center">
               {/* Wallet Balance icon trigger with detailed balance inside tooltip */}
               <Link 
                 to="/billing"
-                className="p-2.5 rounded-xl bg-white border border-slate-150 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 hover:scale-105 active:scale-95 shadow-sm relative group flex items-center justify-center transition-all duration-150"
+                className="w-10 h-10 rounded-xl bg-white border border-slate-150 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 hover:scale-105 active:scale-95 shadow-sm relative group flex items-center justify-center transition-all duration-150"
               >
                 <Wallet className="w-[18px] h-[18px]" />
                 <div className="absolute left-full ml-4 px-3 py-2 bg-slate-900 text-[11px] font-bold text-white rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 pointer-events-none transition-all duration-200 shadow-xl z-50 flex flex-col items-start gap-1">
@@ -381,7 +381,7 @@ export function Layout({ children }: { children: ReactNode }) {
               {/* Logout button */}
               <button 
                 onClick={handleLogout}
-                className="p-2.5 rounded-xl text-slate-400 hover:text-red-650 hover:text-red-600 hover:bg-red-50/60 hover:scale-105 active:scale-95 relative group flex items-center justify-center transition-all duration-150 mt-1 cursor-pointer"
+                className="w-10 h-10 rounded-xl text-slate-400 hover:text-red-650 hover:text-red-600 hover:bg-red-50/60 hover:scale-105 active:scale-95 relative group flex items-center justify-center transition-all duration-150 mt-1 cursor-pointer"
               >
                 <LogOut className="w-[18px] h-[18px]" />
                 <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 text-[11px] font-bold text-white rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 pointer-events-none transition-all duration-200 shadow-xl z-50 flex items-center justify-center">
