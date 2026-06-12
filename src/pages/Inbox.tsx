@@ -15,6 +15,7 @@ export function Inbox() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<'sms'|'system'|'support'>('sms');
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Create ticket form states
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -26,6 +27,19 @@ export function Inbox() {
   useEffect(() => {
     if (!auth.currentUser) return;
     
+    let smsLoaded = false;
+    let notifsLoaded = false;
+    let ticketsLoaded = false;
+    const checkComplete = () => {
+      if (smsLoaded && notifsLoaded && ticketsLoaded) {
+        setIsInitialLoading(false);
+      }
+    };
+
+    const safetyTimeout = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2000);
+
     const unsubSms = onSnapshot(query(
       collection(db, "messages"),
       where("userId", "==", auth.currentUser.uid)
@@ -37,6 +51,11 @@ export function Inbox() {
         return tB - tA;
       });
       setMessages(list);
+      smsLoaded = true;
+      checkComplete();
+    }, (err) => {
+      smsLoaded = true;
+      checkComplete();
     });
 
     const unsubNotifs = onSnapshot(query(
@@ -50,6 +69,11 @@ export function Inbox() {
         return tB - tA;
       });
       setNotifications(list);
+      notifsLoaded = true;
+      checkComplete();
+    }, (err) => {
+      notifsLoaded = true;
+      checkComplete();
     });
 
     // In-memory sort to prevent composite index errors in Firestore
@@ -64,9 +88,15 @@ export function Inbox() {
         return tB - tA; // descending Order
       });
       setTickets(list);
+      ticketsLoaded = true;
+      checkComplete();
+    }, (err) => {
+      ticketsLoaded = true;
+      checkComplete();
     });
 
     return () => { 
+      clearTimeout(safetyTimeout);
       unsubSms(); 
       unsubNotifs(); 
       unsubTickets(); 
@@ -247,7 +277,31 @@ export function Inbox() {
       <div className="space-y-4">
         {/* SMS Codes Tab */}
         {activeTab === 'sms' && (
-          filteredMsgs.length === 0 ? (
+          isInitialLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="bg-slate-50 p-6 md:w-64 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col justify-center">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-5 h-5 bg-slate-200 rounded-full shrink-0" />
+                        <div className="h-3 bg-slate-200 rounded w-16" />
+                      </div>
+                      <div className="h-5 bg-slate-200 rounded w-32" />
+                      <div className="h-3 bg-slate-150 rounded w-24 mt-2" />
+                    </div>
+                    <div className="p-6 flex-1 flex flex-col justify-center">
+                      <div className="h-3 bg-slate-200 rounded w-16 mb-2" />
+                      <div className="h-12 bg-slate-50 rounded-lg" />
+                      <div className="mt-4 flex justify-end">
+                        <div className="h-8 bg-slate-200 rounded w-24" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredMsgs.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-xl border border-dashed border-slate-300">
               <InboxIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-900">No messages yet</h3>
@@ -291,7 +345,20 @@ export function Inbox() {
 
         {/* System Notifications Tab */}
         {activeTab === 'system' && (
-          filteredNotifs.length === 0 ? (
+          isInitialLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-slate-200 p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="h-5 bg-slate-200 rounded w-1/3" />
+                    <div className="h-4 bg-slate-150 rounded w-20" />
+                  </div>
+                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-4" />
+                  <div className="h-10 bg-slate-100 rounded w-full" />
+                </div>
+              ))}
+            </div>
+          ) : filteredNotifs.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-xl border border-dashed border-slate-300">
               <Bell className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-900">No system notifications</h3>
@@ -435,7 +502,21 @@ export function Inbox() {
             )}
 
             {/* Support Tickets List */}
-            {filteredTickets.length === 0 ? (
+            {isInitialLoading ? (
+              <div className="space-y-4 animate-pulse">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-200 p-5">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="space-y-1.5 w-2/3">
+                        <div className="h-4 bg-slate-200 rounded w-2/3" />
+                        <div className="h-3 bg-slate-150 rounded w-24" />
+                      </div>
+                      <div className="h-5 bg-slate-200 rounded w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredTickets.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
                 <HelpCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-slate-900">No support tickets</h3>

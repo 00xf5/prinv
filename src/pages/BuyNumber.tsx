@@ -1516,7 +1516,12 @@ export function BuyNumber() {
               <ScrollArea className="h-[200px] border border-slate-200 bg-white rounded-lg p-2">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {isLoadingCountries ? (
-                    <div className="col-span-full flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-indigo-600" /></div>
+                    Array.from({ length: 9 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-2 p-3 rounded-md border border-slate-100 bg-white animate-pulse">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0" />
+                        <div className="h-4 bg-slate-200 rounded w-16" />
+                      </div>
+                    ))
                   ) : (
                     <>
                       {filteredCountries.slice(0, visibleCountryCount).map(country => (
@@ -1580,10 +1585,15 @@ export function BuyNumber() {
             <ScrollArea className="h-[240px] border border-slate-200 bg-white rounded-lg p-2">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {isLoadingServices ? (
-                  <div className="col-span-full flex flex-col items-center justify-center py-8">
-                     <Loader2 className="animate-spin h-6 w-6 text-indigo-600 mb-2" />
-                     <span className="text-xs text-slate-500">Fetching prices...</span>
-                  </div>
+                  Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="flex flex-col gap-2.5 p-3 rounded-md border border-slate-100 bg-white animate-pulse">
+                      <div className="flex items-center gap-2.5 w-full">
+                        <div className="w-10 h-10 md:h-12 md:w-12 bg-slate-200 rounded-full shrink-0" />
+                        <div className="h-4 bg-slate-200 rounded w-16" />
+                      </div>
+                      <div className="h-3 bg-slate-200 rounded w-12 mt-1" />
+                    </div>
+                  ))
                 ) : (
                   <>
                     {filteredServices.slice(0, visibleServiceCount).map(service => (

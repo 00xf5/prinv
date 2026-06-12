@@ -10,9 +10,14 @@ import { toast } from "sonner";
 export function History() {
   const { formatCentsToNGN } = useExchangeRate();
   const [sessions, setSessions] = useState<any[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
     if (!auth.currentUser) return;
+    
+    const safetyTimeout = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2000);
     
     const q = query(
       collection(db, "sessions"),
@@ -27,9 +32,15 @@ export function History() {
         return tB - tA;
       });
       setSessions(list);
+      setIsInitialLoading(false);
+    }, (err) => {
+      setIsInitialLoading(false);
     });
     
-    return () => unsub();
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsub();
+    };
   }, []);
 
   const handleCopy = (text: string) => {
@@ -45,7 +56,31 @@ export function History() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {sessions.length === 0 ? (
+        {isInitialLoading ? (
+          <div className="divide-y divide-slate-100 animate-pulse">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start md:items-center gap-4">
+                  <div className="w-12 h-12 bg-slate-200 rounded-xl shrink-0" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-slate-200 rounded w-24" />
+                    <div className="h-3 bg-slate-150 rounded w-32" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between md:justify-end gap-6">
+                  <div className="space-y-1">
+                    <div className="h-3 bg-slate-200 rounded w-8" />
+                    <div className="h-4 bg-slate-200 rounded w-16" />
+                  </div>
+                  <div className="space-y-1.5 flex flex-col items-end">
+                    <div className="h-6 bg-slate-200 rounded w-24" />
+                    <div className="h-3 bg-slate-150 rounded w-28" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             <Phone className="h-10 w-10 text-slate-300 mb-4" />
             <h3 className="text-sm font-bold text-slate-900 mb-1">No history yet</h3>

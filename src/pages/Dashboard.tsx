@@ -81,6 +81,7 @@ export function Dashboard() {
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [isCancelling, setIsCancelling] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
     // 1. Initial quick load from local storage
@@ -184,9 +185,27 @@ export function Dashboard() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
+    let userLoaded = false;
+    let sessionsLoaded = false;
+    const checkComplete = () => {
+      if (userLoaded && sessionsLoaded) {
+        setIsInitialLoading(false);
+      }
+    };
+
+    // Safety fallback
+    const safetyTimeout = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2000);
+
     // Sub to balance changes
     const unsubUser = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc) => {
       if (doc.exists()) setBalance(doc.data().balance || 0);
+      userLoaded = true;
+      checkComplete();
+    }, (err) => {
+      userLoaded = true;
+      checkComplete();
     });
 
     // Sub to recent sessions (active + completed) - sorted in-memory to prevent composite index errors
@@ -202,9 +221,15 @@ export function Dashboard() {
         return tB - tA;
       });
       setActiveSessions(sessions.slice(0, 5));
+      sessionsLoaded = true;
+      checkComplete();
+    }, (err) => {
+      sessionsLoaded = true;
+      checkComplete();
     });
 
     return () => {
+      clearTimeout(safetyTimeout);
       unsubUser();
       unsubSessions();
     };
@@ -218,41 +243,63 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
-          <div className="w-full">
-            <div className="flex justify-between items-start mb-2">
-              <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Current Balance</div>
-              <div className="p-1.5 md:p-3 bg-indigo-50 rounded-lg text-indigo-600 md:hidden">
-                <Wallet className="h-4 w-4" />
-              </div>
+        {isInitialLoading ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between animate-pulse w-full">
+            <div className="w-full">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-3" />
+              <div className="h-8 bg-slate-200 rounded w-1/2 mb-4" />
+              <div className="h-9 bg-slate-200 rounded w-full" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-0">{formatCentsToNGN(balance)}</div>
-            <Link to="/billing" className={buttonVariants({ size: "sm", variant: "outline", className: "mt-0 md:mt-4 border-slate-200 text-slate-700 w-full font-semibold text-xs py-1 h-8 md:h-9" })}>
-              Add Funds
-            </Link>
+            <div className="hidden md:block p-3 bg-slate-100 rounded-lg w-12 h-12 ml-4 shrink-0" />
           </div>
-          <div className="hidden md:block p-3 bg-indigo-50 rounded-lg text-indigo-600 ml-4">
-            <Wallet className="h-6 w-6" />
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
+            <div className="w-full">
+              <div className="flex justify-between items-start mb-2">
+                <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Current Balance</div>
+                <div className="p-1.5 md:p-3 bg-indigo-50 rounded-lg text-indigo-600 md:hidden">
+                  <Wallet className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 md:mb-0">{formatCentsToNGN(balance)}</div>
+              <Link to="/billing" className={buttonVariants({ size: "sm", variant: "outline", className: "mt-0 md:mt-4 border-slate-200 text-slate-700 w-full font-semibold text-xs py-1 h-8 md:h-9" })}>
+                Add Funds
+              </Link>
+            </div>
+            <div className="hidden md:block p-3 bg-indigo-50 rounded-lg text-indigo-600 ml-4">
+              <Wallet className="h-6 w-6" />
+            </div>
           </div>
-        </div>
+        )}
         
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
-          <div className="w-full">
-            <div className="flex justify-between items-start mb-2">
-              <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Active Numbers</div>
-              <div className="p-1.5 md:p-3 bg-emerald-50 rounded-lg text-emerald-600 md:hidden">
-                <Phone className="h-4 w-4" />
-              </div>
+        {isInitialLoading ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between animate-pulse w-full">
+            <div className="w-full">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-3" />
+              <div className="h-8 bg-slate-200 rounded w-1/4 mb-4" />
+              <div className="h-9 bg-slate-200 rounded w-full" />
             </div>
-            <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-4 md:mb-0">{activeSessions.filter(s => s.status === 'active').length}</div>
-            <Link to="/buy" className={buttonVariants({ size: "sm", className: "mt-0 md:mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full font-bold text-xs py-1 h-8 md:h-9" })}>
-              Rent Number
-            </Link>
+            <div className="hidden md:block p-3 bg-slate-100 rounded-lg w-12 h-12 ml-4 shrink-0" />
           </div>
-          <div className="hidden md:block p-3 bg-emerald-50 rounded-lg text-emerald-600 ml-4">
-            <Phone className="h-6 w-6" />
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start justify-between">
+            <div className="w-full">
+              <div className="flex justify-between items-start mb-2">
+                <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Active Numbers</div>
+                <div className="p-1.5 md:p-3 bg-emerald-50 rounded-lg text-emerald-600 md:hidden">
+                  <Phone className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-emerald-600 mb-4 md:mb-0">{activeSessions.filter(s => s.status === 'active').length}</div>
+              <Link to="/buy" className={buttonVariants({ size: "sm", className: "mt-0 md:mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full font-bold text-xs py-1 h-8 md:h-9" })}>
+                Rent Number
+              </Link>
+            </div>
+            <div className="hidden md:block p-3 bg-emerald-50 rounded-lg text-emerald-600 ml-4">
+              <Phone className="h-6 w-6" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       {favorites.length > 0 && (
@@ -297,10 +344,32 @@ export function Dashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h2 className="font-bold text-slate-900 text-sm">Recently Rented</h2>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">{activeSessions.filter(s => s.status === 'active').length} ACTIVE</span>
+            {isInitialLoading ? (
+              <div className="h-5 bg-slate-200 w-16 rounded animate-pulse" />
+            ) : (
+              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">{activeSessions.filter(s => s.status === 'active').length} ACTIVE</span>
+            )}
           </div>
           
-          {activeSessions.length === 0 ? (
+          {isInitialLoading ? (
+            <div className="p-5 space-y-4 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-slate-100 rounded-lg bg-white/80">
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="w-10 h-10 bg-slate-200 rounded-lg shrink-0" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-28" />
+                      <div className="h-3 bg-slate-150 rounded w-16" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 justify-between md:justify-end w-full md:w-auto">
+                    <div className="h-6 bg-slate-200 rounded w-20" />
+                    <div className="h-7 bg-slate-200 rounded w-28" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center bg-white">
               <Phone className="h-10 w-10 text-slate-300 mb-4" />
               <h3 className="text-sm font-bold text-slate-900 mb-1">No numbers rented</h3>

@@ -4,24 +4,64 @@ import { Input } from "@/components/ui/input";
 import { Wallet, CreditCard, ArrowRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { db, auth } from "../lib/firebase";
-import { doc, onSnapshot, runTransaction, collection, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, runTransaction, collection, setDoc, query, where } from "firebase/firestore";
 import { useExchangeRate } from "../lib/useExchangeRate";
+import { format } from "date-fns";
 
 export function Billing() {
   const { rate, formatCentsToNGN, formatNGNDirectly } = useExchangeRate();
   const [amount, setAmount] = useState("15000");
   const [isProcessing, setIsProcessing] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => {
-    if (auth.currentUser) {
-      const unsub = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc: any) => {
-        if (doc.exists()) {
-          setBalance(doc.data().balance);
-        }
-      });
-      return unsub;
-    }
+    if (!auth.currentUser) return;
+
+    let balanceLoaded = false;
+    let txsLoaded = false;
+    const checkComplete = () => {
+      if (balanceLoaded && txsLoaded) {
+        setIsInitialLoading(false);
+      }
+    };
+
+    const safetyTimeout = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2000);
+
+    const unsubUser = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc: any) => {
+      if (doc.exists()) {
+        setBalance(doc.data().balance || 0);
+      }
+      balanceLoaded = true;
+      checkComplete();
+    }, (err) => {
+      balanceLoaded = true;
+      checkComplete();
+    });
+
+    const q = query(
+      collection(db, "transactions"),
+      where("userId", "==", auth.currentUser.uid)
+    );
+    const unsubTxs = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+      setTransactions(list);
+      txsLoaded = true;
+      checkComplete();
+    }, (err) => {
+      txsLoaded = true;
+      checkComplete();
+    });
+
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubUser();
+      unsubTxs();
+    };
   }, []);
 
   const handleTopUp = async () => {
@@ -97,20 +137,30 @@ export function Billing() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-slate-900 text-white shadow-xl rounded-xl overflow-hidden flex flex-col justify-between">
-          <div className="p-6">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Current Balance</h2>
-            <div className="text-5xl font-bold tracking-tight flex items-center">
-              {formatCentsToNGN(balance)}
+        {isInitialLoading ? (
+          <div className="bg-slate-900 text-white shadow-xl rounded-xl p-6 h-[178px] animate-pulse flex flex-col justify-between">
+            <div>
+              <div className="h-4 bg-slate-800 rounded w-1/3 mb-4" />
+              <div className="h-10 bg-slate-800 rounded w-1/2" />
+            </div>
+            <div className="h-4 bg-slate-800 rounded w-2/3" />
+          </div>
+        ) : (
+          <div className="bg-slate-900 text-white shadow-xl rounded-xl overflow-hidden flex flex-col justify-between">
+            <div className="p-6">
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Current Balance</h2>
+              <div className="text-5xl font-bold tracking-tight flex items-center">
+                {formatCentsToNGN(balance)}
+              </div>
+            </div>
+            <div className="bg-slate-800 border-t border-slate-700 p-4">
+              <div className="text-sm text-slate-400 flex items-center gap-2 font-medium">
+                <Clock className="h-4 w-4 text-indigo-400" /> 
+                Real-time balance updates
+              </div>
             </div>
           </div>
-          <div className="bg-slate-800 border-t border-slate-700 p-4">
-            <div className="text-sm text-slate-400 flex items-center gap-2 font-medium">
-              <Clock className="h-4 w-4 text-indigo-400" /> 
-              Real-time balance updates
-            </div>
-          </div>
-        </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100 bg-slate-50/50">
@@ -146,11 +196,57 @@ export function Billing() {
           <h2 className="font-bold text-slate-900">Recent Transactions</h2>
         </div>
         <div className="p-6">
-          <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-            <Wallet className="h-8 w-8 mx-auto mb-3 text-slate-300" />
-            <div className="font-bold text-slate-700 mb-1">No recent transactions</div>
-            <div className="text-sm text-slate-500">Your billing history will appear here.</div>
-          </div>
+          {isInitialLoading ? (
+            <div className="space-y-4 animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-4 border border-slate-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-200 rounded-full shrink-0" />
+                    <div className="space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-28" />
+                      <div className="h-3 bg-slate-150 rounded w-20" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 flex flex-col items-end">
+                    <div className="h-4 bg-slate-200 rounded w-16" />
+                    <div className="h-3 bg-slate-150 rounded w-12" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+              <Wallet className="h-8 w-8 mx-auto mb-3 text-slate-300" />
+              <div className="font-bold text-slate-700 mb-1">No recent transactions</div>
+              <div className="text-sm text-slate-500">Your billing history will appear here.</div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="py-4 flex items-center justify-between first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${tx.type === 'topup' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                      <Wallet className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm capitalize">{tx.type} {tx.provider ? `(${tx.provider})` : ''}</div>
+                      <div className="text-xs text-slate-400 font-medium">
+                        {tx.createdAt ? format(new Date(tx.createdAt), "MMM d, yyyy HH:mm") : 'Pending'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`font-mono text-sm font-bold ${tx.type === 'topup' ? 'text-emerald-600' : 'text-slate-700'}`}>
+                      {tx.type === 'topup' ? '+' : '-'}{formatCentsToNGN(tx.amount)}
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wider ${tx.status === 'completed' ? 'text-emerald-500' : 'text-yellow-500'}`}>
+                      {tx.status}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
