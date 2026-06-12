@@ -26,17 +26,26 @@ function Countdown({ expiresAt }: { expiresAt: number }) {
 }
 
 function CancelControl({ session, onCancel, isCancelling }: { session: any, onCancel: (session: any) => void, isCancelling: boolean }) {
-  const [elapsed, setElapsed] = useState(Date.now() - session.createdAt);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsed(Date.now() - session.createdAt);
+      setNow(Date.now());
     }, 1000);
     return () => clearInterval(timer);
-  }, [session.createdAt]);
+  }, []);
 
   if (session.status !== "active" || session.code) return null;
 
+  if (session.expiresAt && session.expiresAt < now) {
+    return (
+      <div className="text-[10px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 rounded-md px-2 py-1 inline-flex items-center">
+        Refunding...
+      </div>
+    );
+  }
+
+  const elapsed = now - session.createdAt;
   const cancelWaitMs = 6 * 60 * 1000;
   const isCancellable = elapsed >= cancelWaitMs;
   const remaining = Math.max(0, cancelWaitMs - elapsed);

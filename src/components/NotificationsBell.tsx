@@ -113,7 +113,7 @@ export function NotificationsBell() {
                   )}
 
                   {/* Reply Input */}
-                  {n.canReply && (
+                  {n.canReply && !n.replies?.some((r: any) => r.sender === 'user') && (
                     <div className="flex items-center gap-2 mt-2" onClick={e => e.stopPropagation()}>
                       <Input 
                         id={`user-reply-${n.id}`}
@@ -136,6 +136,11 @@ export function NotificationsBell() {
                       >
                         <User className="w-4 h-4 ml-1" />
                       </Button>
+                    </div>
+                  )}
+                  {n.canReply && n.replies?.some((r: any) => r.sender === 'user') && (
+                    <div className="text-[10px] text-slate-400 mt-2 text-center italic bg-slate-50 border border-slate-100 rounded p-1.5">
+                       Feedback sent. For more help, please open a support ticket.
                     </div>
                   )}
                 </div>

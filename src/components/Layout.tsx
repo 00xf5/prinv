@@ -12,17 +12,23 @@ import { useExchangeRate } from "../lib/useExchangeRate";
 
 function VverifyLogo({ className = "w-8 h-8" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={`select-none ${className}`}>
-      {/* Dark Hexagon Base for high contrast */}
-      <path d="M50 4 L88 24 L88 66 C88 84 50 96 50 96 C50 96 12 84 12 66 L12 24 L50 4 Z" fill="#0F172A" />
-      {/* Inner Accent layer (Indigo) */}
-      <path d="M50 14 L80 30 L80 63 C80 77 50 86 50 86 C50 86 20 77 20 63 L20 30 L50 14 Z" fill="#4F46E5" />
-      {/* Big bold distinct V's */}
-      {/* Back check/slash */}
-      <path d="M30 45 L45 60 L78 28" stroke="#A5B4FC" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Main overlapping V */}
-      <path d="M40 68 L50 78 L80 48" stroke="white" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M35 52 L50 67 L65 42" stroke="white" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={`select-none shrink-0 ${className}`}>
+      <defs>
+        <linearGradient id="vbrandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6366F1" /> {/* Indigo 500 */}
+          <stop offset="100%" stopColor="#3730A3" /> {/* Indigo 800 */}
+        </linearGradient>
+      </defs>
+      
+      {/* Message / Call Bubble Body */}
+      <path d="M 50 5 C 25 5 5 25 5 50 C 5 62 10 73 18 80 L 10 95 L 30 88 C 36 92 43 95 50 95 C 75 95 95 75 95 50 C 95 25 75 5 50 5 Z" fill="url(#vbrandGrad)" />
+      
+      {/* Bold Modern "V" / Checkmark */}
+      <path d="M 32 50 L 46 66 C 47.5 68 50.5 68 52 66 L 72 36" stroke="white" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+      
+      {/* Call Waves (Signal theme) */}
+      <path d="M 60 22 A 20 20 0 0 1 82 42" stroke="#A5B4FC" strokeWidth="6" strokeLinecap="round" />
+      <path d="M 70 12 A 32 32 0 0 1 94 36" stroke="#A5B4FC" strokeWidth="6" strokeLinecap="round" opacity="0.5" />
     </svg>
   );
 }

@@ -1604,7 +1604,6 @@ export function BuyNumber() {
                           <span className={`text-xs font-semibold ${selectedService?.id === service.id ? "text-indigo-600" : "text-slate-500"}`}>
                             {formatCentsToNGN(calculatePrice(service.grizzlyCost))}
                           </span>
-                          <span className="text-[10px] text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{service.count}</span>
                         </div>
                       </button>
                     ))}
