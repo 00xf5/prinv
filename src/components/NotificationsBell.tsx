@@ -92,7 +92,15 @@ export function NotificationsBell() {
                       {n.title}
                     </h4>
                     <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap ml-2">
-                      {n.createdAt ? format(n.createdAt.toDate(), 'p') : 'New'}
+                      {(() => {
+                        if (!n.createdAt) return 'New';
+                        try {
+                          const date = n.createdAt.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+                          return format(date, 'p');
+                        } catch (err) {
+                          return 'New';
+                        }
+                      })()}
                     </span>
                   </div>
                   <p className={`text-xs ${n.read ? 'text-slate-500' : 'text-slate-700 font-medium'} leading-relaxed mb-3 whitespace-pre-wrap`}>
@@ -101,7 +109,7 @@ export function NotificationsBell() {
 
                   {/* Replies history */}
                   {n.replies && n.replies.length > 0 && (
-                    <div className="mt-2 mb-3 space-y-2 bg-slate-50 p-2.5 rounded-md border border-slate-100 text-xs shadow-inner">
+                    <div className="mt-2 mb-3 space-y-2 bg-slate-50 p-2.5 rounded-md border border-slate-100 text-xs shadow-inner max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                       {n.replies.map((r: any, i: number) => (
                         <div key={i} className={`flex ${r.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[85%] rounded-md px-3 py-1.5 ${r.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}>

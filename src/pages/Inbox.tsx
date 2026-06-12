@@ -307,7 +307,15 @@ export function Inbox() {
                 <div className="flex justify-between items-start mb-2">
                   <h3 className={`text-lg ${n.read ? 'text-slate-800 font-medium' : 'text-indigo-900 font-bold'}`}>{n.title}</h3>
                   <span className="text-xs font-medium text-slate-500 whitespace-nowrap ml-4">
-                    {n.createdAt ? format(n.createdAt.toDate(), 'PP p') : 'New'}
+                    {(() => {
+                      if (!n.createdAt) return 'New';
+                      try {
+                        const date = n.createdAt.toDate ? n.createdAt.toDate() : new Date(n.createdAt);
+                        return format(date, 'PP p');
+                      } catch (err) {
+                        return 'New';
+                      }
+                    })()}
                   </span>
                 </div>
                 <p className="text-slate-600 text-sm whitespace-pre-wrap mb-4">{n.message}</p>
@@ -325,7 +333,7 @@ export function Inbox() {
                   </div>
                 )}
 
-                {n.canReply && (
+                {n.canReply && !n.replies?.some((r: any) => r.sender === 'user') && (
                   <div className="mt-4 flex items-center gap-3 pt-4 border-t border-slate-100" onClick={e => e.stopPropagation()}>
                     <Input 
                       placeholder="Type your reply to the admin here..."
@@ -344,6 +352,11 @@ export function Inbox() {
                       <User className="h-4 w-4 mr-2" />
                       Reply
                     </Button>
+                  </div>
+                )}
+                {n.canReply && n.replies?.some((r: any) => r.sender === 'user') && (
+                  <div className="text-[10px] text-slate-400 mt-2 text-center italic bg-slate-50 border border-slate-100 rounded p-1.5 w-full">
+                     Feedback sent. For more help, please open a support ticket.
                   </div>
                 )}
               </div>
